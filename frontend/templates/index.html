@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ERP Farmacias{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <div class="d-flex gap-2">
+                <span class="badge bg-success fs-6">
+                    <i class="fas fa-circle me-1"></i>Sistema Activo
+                </span>
+                <span class="badge bg-info fs-6" id="current-time"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Clientes
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-clientes">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Productos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-productos">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Pedidos Pendientes
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="pedidos-pendientes">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-shopping-cart fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Facturas del Mes
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="facturas-mes">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-file-invoice fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas y Actividad Reciente -->
+<div class="row">
+    <!-- Acciones Rápidas -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Acciones Rápidas</h6>
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-primary btn-lg w-100" onclick="window.location.href='/pedidos/nuevo'">
+                            <i class="fas fa-plus me-2"></i>
+                            Nuevo Pedido
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-success btn-lg w-100" onclick="window.location.href='/clientes/nuevo'">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Nuevo Cliente
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-info btn-lg w-100" onclick="window.location.href='/productos/nuevo'">
+                            <i class="fas fa-box me-2"></i>
+                            Nuevo Producto
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-warning btn-lg w-100" onclick="window.location.href='/stock'">
+                            <i class="fas fa-warehouse me-2"></i>
+                            Ver Stock
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actividad Reciente -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Actividad Reciente</h6>
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="card-body">
+                <div id="actividad-reciente">
+                    <div class="text-center py-3">
+                        <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">Cargando actividad reciente...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas de Stock Bajo -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-danger">Alertas de Stock Bajo</h6>
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="card-body">
+                <div id="alertas-stock">
+                    <div class="text-center py-3">
+                        <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">Verificando niveles de stock...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cargar datos del dashboard al iniciar
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarDatosDashboard();
+        actualizarHora();
+        setInterval(actualizarHora, 1000); // Actualizar cada segundo
+    });
+
+    function cargarDatosDashboard() {
+        // Por ahora mostramos datos de ejemplo
+        // Más tarde conectaremos con la API real
+        
+        setTimeout(() => {
+            document.getElementById('total-clientes').innerHTML = '0';
+            document.getElementById('total-productos').innerHTML = '0';
+            document.getElementById('pedidos-pendientes').innerHTML = '0';
+            document.getElementById('facturas-mes').innerHTML = '0';
+            
+            // Actividad reciente
+            document.getElementById('actividad-reciente').innerHTML = `
+                <div class="activity-item py-2 border-bottom">
+                    <i class="fas fa-info-circle text-info me-2"></i>
+                    <span class="text-muted">Sistema iniciado correctamente</span>
+                    <small class="text-muted float-end">Hace unos segundos</small>
+                </div>
+                <div class="activity-item py-2">
+                    <i class="fas fa-database text-success me-2"></i>
+                    <span class="text-muted">Base de datos conectada</span>
+                    <small class="text-muted float-end">Hace unos segundos</small>
+                </div>
+            `;
+            
+            // Alertas de stock
+            document.getElementById('alertas-stock').innerHTML = `
+                <div class="alert alert-success mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    No hay productos con stock bajo en este momento.
+                </div>
+            `;
+        }, 1000);
+    }
+
+    function actualizarHora() {
+        const ahora = new Date();
+        const hora = ahora.toLocaleTimeString('es-ES');
+        document.getElementById('current-time').textContent = hora;
+    }
+</script>
+{% endblock %}

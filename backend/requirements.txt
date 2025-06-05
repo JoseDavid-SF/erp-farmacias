@@ -1,0 +1,25 @@
+# Framework web
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-CORS==4.0.0
+
+# Base de datos
+psycopg2-binary==2.9.9
+
+# Variables de entorno
+python-dotenv==1.0.0
+
+# Generación de PDFs
+reportlab==4.0.7
+
+# Envío de correos
+Flask-Mail==0.9.1
+
+# Manejo de fechas
+python-dateutil==2.8.2
+
+# Validaciones
+marshmallow==3.20.1
+
+# Utilidades
+Werkzeug==3.0.1
