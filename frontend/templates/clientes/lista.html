@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - ERP Farmacias{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Clientes</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-users me-2"></i>
+                Gestión de Clientes
+            </h1>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" onclick="exportarClientes()">
+                    <i class="fas fa-download me-1"></i>Exportar
+                </button>
+                <a href="{{ url_for('clientes.nuevo_cliente') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Nuevo Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros y Búsqueda -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Buscar Cliente</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="search" 
+                                   name="search" 
+                                   value="{{ search }}"
+                                   placeholder="Buscar por nombre, código o teléfono...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <a href="{{ url_for('clientes.lista_clientes') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Clientes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Lista de Clientes</h5>
+                    <span class="badge bg-primary">{{ clientes.total }} clientes</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if clientes.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Teléfono</th>
+                                <th>Email</th>
+                                <th>Estado</th>
+                                <th>Última Visita</th>
+                                <th width="120">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in clientes.items %}
+                            <tr>
+                                <td>
+                                    <span class="fw-bold text-primary">{{ cliente.codigo }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-light rounded-circle d-flex align-items-center justify-content-center me-2">
+                                            <i class="fas fa-building text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ cliente.nombre }}</div>
+                                            {% if cliente.direccion %}
+                                            <small class="text-muted">{{ cliente.direccion[:50] }}{% if cliente.direccion|length > 50 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if cliente.telefono %}
+                                    <a href="tel:{{ cliente.telefono }}" class="text-decoration-none">
+                                        <i class="fas fa-phone me-1"></i>{{ cliente.telefono }}
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cliente.email %}
+                                    <a href="mailto:{{ cliente.email }}" class="text-decoration-none">
+                                        <i class="fas fa-envelope me-1"></i>{{ cliente.email }}
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cliente.activo %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Activo
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times me-1"></i>Inactivo
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cliente.fecha_ultima_visita %}
+                                    <span data-bs-toggle="tooltip" title="{{ cliente.fecha_ultima_visita.strftime('%d/%m/%Y %H:%M') }}">
+                                        {{ cliente.fecha_ultima_visita.strftime('%d/%m/%Y') }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">Nunca</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" 
+                                                class="btn btn-outline-info" 
+                                                onclick="verDetalleCliente({{ cliente.id }})"
+                                                data-bs-toggle="tooltip" 
+                                                title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <a href="{{ url_for('clientes.editar_cliente', id=cliente.id) }}" 
+                                           class="btn btn-outline-warning"
+                                           data-bs-toggle="tooltip" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger" 
+                                                onclick="eliminarCliente({{ cliente.id }}, '{{ cliente.nombre|replace("'", "\\'") }}')"
+                                                data-bs-toggle="tooltip" 
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-users fa-3x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">No hay clientes registrados</h5>
+                    {% if search %}
+                    <p class="text-muted">No se encontraron clientes con "{{ search }}"</p>
+                    <a href="{{ url_for('clientes.lista_clientes') }}" class="btn btn-outline-primary">
+                        Ver todos los clientes
+                    </a>
+                    {% else %}
+                    <p class="text-muted">Comienza agregando tu primer cliente</p>
+                    <a href="{{ url_for('clientes.nuevo_cliente') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Crear Primer Cliente
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Paginación -->
+            {% if clientes.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Paginación de clientes">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if clientes.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('clientes.lista_clientes', page=clientes.prev_num, search=search) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in clientes.iter_pages() %}
+                        {% if page_num %}
+                        {% if page_num != clientes.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('clientes.lista_clientes', page=page_num, search=search) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if clientes.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('clientes.lista_clientes', page=clientes.next_num, search=search) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para detalles del cliente -->
+<div class="modal fade" id="modalDetalleCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user me-2"></i>
+                    Detalles del Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detalleClienteContent">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2">Cargando información...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/clientes.js') }}"></script>
+{% endblock %}

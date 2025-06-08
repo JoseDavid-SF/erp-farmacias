@@ -39,7 +39,7 @@ function initializeApp() {
  * @brief Verifica la conexión con la API del backend
  * @details Realiza una petición al endpoint de prueba para verificar
  *          que la comunicación con el servidor funciona correctamente.
- * @version 3.0
+ * @version 3.1
  */
 async function checkAPIConnection() {
     try {
@@ -48,10 +48,22 @@ async function checkAPIConnection() {
         
         if (data.status === 'success') {
             console.log('✅ Conexión con API exitosa');
-            showNotification('Sistema conectado correctamente', 'success', false);
+            
+            // Solo mostrar notificación en el dashboard principal
+            if (window.location.pathname === '/' || window.location.pathname === '') {
+                // Verificar si ya se mostró en esta sesión
+                const yaNotificado = sessionStorage.getItem('sistema_conectado_notificado');
+                
+                if (!yaNotificado) {
+                    showNotification('Sistema conectado correctamente', 'success', false);
+                    // Marcar como notificado en esta sesión
+                    sessionStorage.setItem('sistema_conectado_notificado', 'true');
+                }
+            }
         }
     } catch (error) {
         console.error('❌ Error de conexión:', error);
+        // Solo mostrar errores, estos sí son importantes
         showNotification('Error de conexión con el servidor', 'danger', true);
     }
 }
@@ -306,5 +318,11 @@ window.ERPFarmacias = {
     handleFormSubmit,
     setupSearch,
     openModal,
-    closeModal
+    closeModal,
+    cargarEstadisticasDashboard,
+    actualizarContador
 };
+
+// También hacer disponibles las funciones principales globalmente
+window.cargarEstadisticasDashboard = cargarEstadisticasDashboard;
+window.actualizarContador = actualizarContador;

@@ -84,20 +84,24 @@ def api_crear_cliente():
     @brief API para crear un nuevo cliente
     @details Procesa los datos del formulario y crea un cliente en la base de datos
     @return JSON con resultado de la operación
-    @version 1.0
+    @version 1.1
     """
     try:
         data = request.get_json()
+        print(f"📥 Datos recibidos: {data}")  # Debug log
         
         # Validar datos requeridos
         if not data.get('codigo') or not data.get('nombre'):
+            print("❌ Error: Faltan campos obligatorios")  # Debug log
             return jsonify({
                 'success': False,
                 'message': 'Código y nombre son obligatorios'
             }), 400
         
         # Verificar que el código no exista
-        if Cliente.query.filter_by(codigo=data['codigo']).first():
+        cliente_existente = Cliente.query.filter_by(codigo=data['codigo']).first()
+        if cliente_existente:
+            print(f"❌ Error: Cliente con código {data['codigo']} ya existe")  # Debug log
             return jsonify({
                 'success': False,
                 'message': 'Ya existe un cliente con ese código'
@@ -120,8 +124,13 @@ def api_crear_cliente():
             notas=data.get('notas', '').strip()
         )
         
+        print(f"✅ Cliente creado en memoria: {cliente}")  # Debug log
+        
         db.session.add(cliente)
+        print("✅ Cliente añadido a la sesión")  # Debug log
+        
         db.session.commit()
+        print("✅ Cambios guardados en base de datos")  # Debug log
         
         return jsonify({
             'success': True,
@@ -130,6 +139,7 @@ def api_crear_cliente():
         })
         
     except Exception as e:
+        print(f"❌ Error en api_crear_cliente: {str(e)}")  # Debug log
         db.session.rollback()
         return jsonify({
             'success': False,
@@ -282,6 +292,40 @@ def api_detalle_cliente(id):
     except Exception as e:
         return jsonify({
             'error': f'Error al obtener cliente: {str(e)}'
+        }), 500
+
+@clientes_bp.route('/api/estadisticas')
+def api_estadisticas_clientes():
+    """
+    @brief API para obtener estadísticas de clientes
+    @details Proporciona contadores y métricas para el dashboard
+    @return JSON con estadísticas de clientes
+    @version 1.0
+    """
+    try:
+        # Contar clientes totales
+        total_clientes = Cliente.query.filter_by(activo=True).count()
+        
+        # Contar clientes activos e inactivos
+        clientes_activos = Cliente.query.filter_by(activo=True).count()
+        clientes_inactivos = Cliente.query.filter_by(activo=False).count()
+        
+        # Obtener cliente con última visita más reciente
+        cliente_ultima_visita = Cliente.query.filter(
+            Cliente.fecha_ultima_visita.isnot(None)
+        ).order_by(Cliente.fecha_ultima_visita.desc()).first()
+        
+        return jsonify({
+            'total_clientes': total_clientes,
+            'clientes_activos': clientes_activos,
+            'clientes_inactivos': clientes_inactivos,
+            'ultima_visita': cliente_ultima_visita.fecha_ultima_visita.isoformat() if cliente_ultima_visita and cliente_ultima_visita.fecha_ultima_visita else None,
+            'cliente_ultima_visita': cliente_ultima_visita.nombre if cliente_ultima_visita else None
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Error al obtener estadísticas: {str(e)}'
         }), 500
 
 def validar_email(email):

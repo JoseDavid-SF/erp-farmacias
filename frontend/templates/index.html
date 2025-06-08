@@ -184,23 +184,95 @@
 <script>
     // Cargar datos del dashboard al iniciar
     document.addEventListener('DOMContentLoaded', function() {
-        cargarDatosDashboard();
+        cargarEstadisticasDashboard();
         actualizarHora();
         setInterval(actualizarHora, 1000); // Actualizar cada segundo
+        
+        // Recargar estadísticas cada 30 segundos
+        setInterval(cargarEstadisticasDashboard, 30000);
     });
 
-    function cargarDatosDashboard() {
-        // Por ahora mostramos datos de ejemplo
-        // Más tarde conectaremos con la API real
-        
-        setTimeout(() => {
-            document.getElementById('total-clientes').innerHTML = '0';
-            document.getElementById('total-productos').innerHTML = '0';
-            document.getElementById('pedidos-pendientes').innerHTML = '0';
-            document.getElementById('facturas-mes').innerHTML = '0';
+    /**
+     * Carga las estadísticas del dashboard desde la API
+     */
+    async function cargarEstadisticasDashboard() {
+        try {
+            console.log('📊 Cargando estadísticas del dashboard...');
             
-            // Actividad reciente
-            document.getElementById('actividad-reciente').innerHTML = `
+            const response = await fetch('/api/dashboard/estadisticas');
+            const data = await response.json();
+            
+            if (data.success) {
+                const stats = data.estadisticas;
+                
+                console.log('📊 Estadísticas recibidas:', stats);
+                
+                // Actualizar contadores con animación
+                actualizarContador('total-clientes', stats.total_clientes);
+                actualizarContador('total-productos', stats.total_productos);
+                actualizarContador('pedidos-pendientes', stats.pedidos_pendientes);
+                actualizarContador('facturas-mes', stats.facturas_mes);
+                
+                console.log('✅ Estadísticas del dashboard cargadas correctamente');
+                
+                // Cargar actividad reciente
+                cargarActividadReciente();
+                
+            } else {
+                console.error('❌ Error al cargar estadísticas:', data.error);
+                cargarDatosEstaticos();
+            }
+        } catch (error) {
+            console.error('❌ Error de conexión al cargar estadísticas:', error);
+            cargarDatosEstaticos();
+        }
+    }
+
+    /**
+     * Actualiza un contador en el dashboard con animación
+     */
+    function actualizarContador(elementId, valor) {
+        const elemento = document.getElementById(elementId);
+        if (!elemento) {
+            console.log(`❌ No se encontró el elemento: ${elementId}`);
+            return;
+        }
+        
+        // Añadir clase de carga
+        elemento.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        // Simular carga y mostrar valor con animación
+        setTimeout(() => {
+            elemento.innerHTML = valor;
+            elemento.style.transform = 'scale(1.1)';
+            elemento.style.transition = 'transform 0.2s ease';
+            
+            setTimeout(() => {
+                elemento.style.transform = 'scale(1)';
+            }, 200);
+        }, 300);
+    }
+
+    /**
+     * Carga datos estáticos como fallback
+     */
+    function cargarDatosEstaticos() {
+        document.getElementById('total-clientes').innerHTML = '0';
+        document.getElementById('total-productos').innerHTML = '0';
+        document.getElementById('pedidos-pendientes').innerHTML = '0';
+        document.getElementById('facturas-mes').innerHTML = '0';
+        
+        cargarActividadReciente();
+    }
+
+    /**
+     * Carga la actividad reciente
+     */
+    function cargarActividadReciente() {
+        // Actividad reciente
+        const actividadElement = document.getElementById('actividad-reciente');
+        if (actividadElement) {
+            actividadElement.innerHTML = `
                 <div class="activity-item py-2 border-bottom">
                     <i class="fas fa-info-circle text-info me-2"></i>
                     <span class="text-muted">Sistema iniciado correctamente</span>
@@ -212,21 +284,27 @@
                     <small class="text-muted float-end">Hace unos segundos</small>
                 </div>
             `;
-            
-            // Alertas de stock
-            document.getElementById('alertas-stock').innerHTML = `
+        }
+        
+        // Alertas de stock
+        const stockElement = document.getElementById('alertas-stock');
+        if (stockElement) {
+            stockElement.innerHTML = `
                 <div class="alert alert-success mb-0">
                     <i class="fas fa-check-circle me-2"></i>
                     No hay productos con stock bajo en este momento.
                 </div>
             `;
-        }, 1000);
+        }
     }
 
     function actualizarHora() {
         const ahora = new Date();
         const hora = ahora.toLocaleTimeString('es-ES');
-        document.getElementById('current-time').textContent = hora;
+        const elemento = document.getElementById('current-time');
+        if (elemento) {
+            elemento.textContent = hora;
+        }
     }
 </script>
 {% endblock %}

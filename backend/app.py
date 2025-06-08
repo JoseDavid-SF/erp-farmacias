@@ -41,6 +41,10 @@ def create_app(config_name=None):
     db.init_app(app)
     CORS(app)
     
+    # Registrar blueprints
+    from routes.clientes import clientes_bp
+    app.register_blueprint(clientes_bp)
+    
     # Crear las tablas de la base de datos
     with app.app_context():
         try:
@@ -100,6 +104,48 @@ def create_app(config_name=None):
             "environment": config_name,
             "database": "PostgreSQL"
         })
+    
+    @app.route('/api/dashboard/estadisticas')
+    def api_dashboard_estadisticas():
+        """
+        @brief API para obtener todas las estadísticas del dashboard
+        @details Proporciona contadores de clientes, productos, pedidos y facturas
+        @return JSON con estadísticas completas del sistema
+        @version 1.0
+        """
+        try:
+            from models.models import Cliente, Producto, Pedido, Factura
+            from datetime import datetime, timedelta
+            from sqlalchemy import func
+            
+            # Estadísticas de clientes
+            total_clientes = Cliente.query.filter_by(activo=True).count()
+            
+            # Estadísticas de productos (placeholder - implementaremos después)
+            total_productos = Producto.query.filter_by(activo=True).count()
+            
+            # Estadísticas de pedidos (placeholder - implementaremos después)
+            pedidos_pendientes = Pedido.query.filter_by(estado='pendiente').count()
+            
+            # Estadísticas de facturas del mes actual
+            inicio_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            facturas_mes = Factura.query.filter(Factura.fecha_factura >= inicio_mes).count()
+            
+            return jsonify({
+                'success': True,
+                'estadisticas': {
+                    'total_clientes': total_clientes,
+                    'total_productos': total_productos,
+                    'pedidos_pendientes': pedidos_pendientes,
+                    'facturas_mes': facturas_mes
+                }
+            })
+            
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'Error al obtener estadísticas: {str(e)}'
+            }), 500
     
     return app
 
