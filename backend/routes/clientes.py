@@ -7,8 +7,8 @@
 @details Este módulo contiene todas las rutas relacionadas con la gestión
          de clientes: crear, listar, editar, eliminar y buscar.
 @author José David Sánchez Fernández
-@version 1.0
-@date 2025-06-06
+@version 1.1
+@date 2025-06-09
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -270,19 +270,33 @@ def api_buscar_clientes():
 @clientes_bp.route('/api/detalle/<int:id>')
 def api_detalle_cliente(id):
     """
-    @brief API para obtener detalles de un cliente
+    @brief API para obtener detalles de un cliente incluyendo notas
     @param id ID del cliente
     @return JSON con datos completos del cliente
-    @version 1.0
+    @version 1.1
     """
     try:
         cliente = Cliente.query.get_or_404(id)
         
         # Obtener estadísticas del cliente
-        total_pedidos = len(cliente.pedidos)
+        total_pedidos = len(cliente.pedidos) if hasattr(cliente, 'pedidos') else 0
+        
+        # Crear diccionario completo del cliente incluyendo notas
+        cliente_data = {
+            'id': cliente.id,
+            'codigo': cliente.codigo,
+            'nombre': cliente.nombre,
+            'direccion': cliente.direccion,
+            'telefono': cliente.telefono,
+            'email': cliente.email,
+            'notas': cliente.notas,  # Incluir las notas
+            'activo': cliente.activo,
+            'fecha_creacion': cliente.fecha_creacion.isoformat() if cliente.fecha_creacion else None,
+            'fecha_ultima_visita': cliente.fecha_ultima_visita.isoformat() if cliente.fecha_ultima_visita else None
+        }
         
         return jsonify({
-            'cliente': cliente.to_dict(),
+            'cliente': cliente_data,
             'estadisticas': {
                 'total_pedidos': total_pedidos,
                 'fecha_ultimo_pedido': cliente.fecha_ultima_visita.isoformat() if cliente.fecha_ultima_visita else None

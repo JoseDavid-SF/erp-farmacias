@@ -71,7 +71,7 @@ class Producto(db.Model):
     @brief Modelo para gestionar productos del catálogo
     @details Representa cada producto farmacéutico con su información comercial,
              stock, precios y datos de control de caducidad.
-    @version 6.0
+    @version 7.0
     """
     __tablename__ = 'productos'
     
@@ -80,6 +80,7 @@ class Producto(db.Model):
     nombre = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.Text)
     precio = db.Column(db.Numeric(10, 2), nullable=False)
+    categoria = db.Column(db.String(50))
     stock = db.Column(db.Integer, default=0)
     stock_minimo = db.Column(db.Integer, default=0)
     lote = db.Column(db.String(50))
@@ -89,26 +90,21 @@ class Producto(db.Model):
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
-        """
-        @brief Representación en cadena del producto
-        @return String con código y nombre del producto
-        @version 1.0
-        """
         return f'<Producto {self.codigo}: {self.nombre}>'
 
     def to_dict(self):
-        """
-        @brief Convierte el objeto Producto a diccionario
-        @details Serializa los campos del producto, convirtiendo tipos especiales
-        @return dict Diccionario con los datos del producto
-        @version 4.0
-        """
         return {
             'id': self.id,
             'codigo': self.codigo,
             'nombre': self.nombre,
+            'descripcion': self.descripcion,
             'precio': float(self.precio) if self.precio else 0,
+            'categoria': self.categoria,
             'stock': self.stock,
+            'stock_minimo': self.stock_minimo,
+            'lote': self.lote,
+            'fecha_caducidad': self.fecha_caducidad.isoformat() if self.fecha_caducidad else None,
+            'imagen_url': self.imagen_url,
             'activo': self.activo
         }
 

@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Productos - ERP Farmacias{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Productos</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-box me-2"></i>
+                Catálogo de Productos
+            </h1>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" onclick="exportarProductos()">
+                    <i class="fas fa-download me-1"></i>Exportar
+                </button>
+                <a href="{{ url_for('productos.nuevo_producto') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Nuevo Producto
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros y Búsqueda -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Buscar Producto</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="search" 
+                                   name="search" 
+                                   value="{{ search }}"
+                                   placeholder="Buscar por nombre, código...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="categoria" class="form-label">Categoría</label>
+                        <select class="form-select" id="categoria" name="categoria">
+                            <option value="">Todas las categorías</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat }}" {% if categoria == cat %}selected{% endif %}>
+                                {{ cat }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Filtros</label>
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="stock_bajo" 
+                                   name="stock_bajo" 
+                                   value="true"
+                                   {% if stock_bajo %}checked{% endif %}>
+                            <label class="form-check-label" for="stock_bajo">
+                                Solo stock bajo
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                            <a href="{{ url_for('productos.lista_productos') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grid de Productos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Productos</h5>
+                    <span class="badge bg-primary">{{ productos.total }} productos</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if productos.items %}
+                <div class="row">
+                    {% for producto in productos.items %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 producto-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">{{ producto.codigo }}</span>
+                                {% if producto.categoria %}
+                                <span class="badge bg-secondary">{{ producto.categoria }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-body">
+                                <!-- Imagen del producto -->
+                                <div class="text-center mb-3">
+                                    {% if producto.imagen_url %}
+                                    <img src="{{ producto.imagen_url }}" 
+                                         alt="{{ producto.nombre }}" 
+                                         class="img-fluid rounded producto-imagen"
+                                         style="max-height: 120px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center producto-imagen-placeholder" style="height: 120px;">
+                                        <i class="fas fa-pills fa-2x text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Información del producto -->
+                                <h6 class="card-title text-truncate" title="{{ producto.nombre }}">
+                                    {{ producto.nombre }}
+                                </h6>
+                                
+                                {% if producto.descripcion %}
+                                <p class="card-text text-muted small">
+                                    {{ producto.descripcion[:100] }}{% if producto.descripcion|length > 100 %}...{% endif %}
+                                </p>
+                                {% endif %}
+                                
+                                <!-- Precio -->
+                                <div class="d-flex justify-content-center align-items-center mb-2">
+                                    <span class="h5 mb-0 text-success">
+                                        {{ "%.2f"|format(producto.precio) }}€
+                                    </span>
+                                </div>
+                                
+                                <!-- Stock -->
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <div class="fw-bold {% if producto.stock <= producto.stock_minimo %}text-danger{% elif producto.stock <= (producto.stock_minimo * 2) %}text-warning{% else %}text-success{% endif %}">
+                                                {{ producto.stock }}
+                                            </div>
+                                            <small class="text-muted">Stock</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fw-bold text-info">
+                                            {{ producto.stock_minimo }}
+                                        </div>
+                                        <small class="text-muted">Mínimo</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Alertas -->
+                                {% if producto.stock == 0 %}
+                                <div class="alert alert-danger mt-2 mb-3 py-1 px-2">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <small>Agotado</small>
+                                </div>
+                                {% elif producto.stock <= producto.stock_minimo %}
+                                <div class="alert alert-warning mt-2 mb-3 py-1 px-2">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <small>Stock bajo</small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Información adicional -->
+                                <div class="mb-3">
+                                    {% if producto.lote %}
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-tag me-1"></i>Lote: {{ producto.lote }}
+                                    </small>
+                                    {% endif %}
+                                    {% if producto.fecha_caducidad %}
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Caduca: {{ producto.fecha_caducidad.strftime('%d/%m/%Y') }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Botones de acción directos -->
+                                <div class="d-grid gap-1">
+                                    <button type="button" 
+                                            class="btn btn-outline-info btn-sm btn-ver-detalle-producto"
+                                            data-producto-id="{{ producto.id }}"
+                                            data-bs-toggle="tooltip" 
+                                            title="Ver detalles completos">
+                                        <i class="fas fa-eye me-1"></i>Ver Detalles
+                                    </button>
+                                    <a href="{{ url_for('productos.editar_producto', id=producto.id) }}" 
+                                       class="btn btn-outline-warning btn-sm"
+                                       data-bs-toggle="tooltip" 
+                                       title="Editar producto">
+                                        <i class="fas fa-edit me-1"></i>Editar
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-outline-danger btn-sm btn-eliminar-producto"
+                                            data-producto-id="{{ producto.id }}"
+                                            data-producto-nombre="{{ producto.nombre }}"
+                                            data-bs-toggle="tooltip" 
+                                            title="Desactivar producto">
+                                        <i class="fas fa-trash me-1"></i>Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-box fa-3x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">No hay productos registrados</h5>
+                    {% if search or categoria or stock_bajo %}
+                    <p class="text-muted">No se encontraron productos con los filtros aplicados</p>
+                    <a href="{{ url_for('productos.lista_productos') }}" class="btn btn-outline-primary">
+                        Ver todos los productos
+                    </a>
+                    {% else %}
+                    <p class="text-muted">Comienza agregando tu primer producto</p>
+                    <a href="{{ url_for('productos.nuevo_producto') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Crear Primer Producto
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Paginación -->
+            {% if productos.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Paginación de productos">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if productos.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('productos.lista_productos', page=productos.prev_num, search=search, categoria=categoria, stock_bajo=stock_bajo) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in productos.iter_pages() %}
+                        {% if page_num %}
+                        {% if page_num != productos.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('productos.lista_productos', page=page_num, search=search, categoria=categoria, stock_bajo=stock_bajo) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if productos.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('productos.lista_productos', page=productos.next_num, search=search, categoria=categoria, stock_bajo=stock_bajo) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para detalles del producto -->
+<div class="modal fade" id="modalDetalleProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-box me-2"></i>
+                    Detalles del Producto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detalleProductoContent">
+                <!-- El contenido se carga dinámicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/productos.js') }}"></script>
+{% endblock %}

@@ -4,18 +4,23 @@
  * @details Funciones principales para el manejo del frontend, notificaciones,
  *          validaciones y comunicación con la API del backend.
  * @author José David Sánchez Fernández
- * @version 4.0
- * @date 2025-06-06
+ * @version 4.1
+ * @date 2025-06-09
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
-
-// Aplicación principal ERP Farmacias
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 ERP Farmacias cargado correctamente');
     
     // Inicializar componentes
     initializeApp();
+    
+    // Cargar datos del dashboard si estamos en la página principal
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+        cargarEstadisticasDashboard();
+        actualizarReloj();
+        setInterval(actualizarReloj, 1000);
+    }
 });
 
 /**
@@ -51,20 +56,258 @@ async function checkAPIConnection() {
             
             // Solo mostrar notificación en el dashboard principal
             if (window.location.pathname === '/' || window.location.pathname === '') {
-                // Verificar si ya se mostró en esta sesión
                 const yaNotificado = sessionStorage.getItem('sistema_conectado_notificado');
                 
                 if (!yaNotificado) {
                     showNotification('Sistema conectado correctamente', 'success', false);
-                    // Marcar como notificado en esta sesión
                     sessionStorage.setItem('sistema_conectado_notificado', 'true');
                 }
             }
         }
     } catch (error) {
         console.error('❌ Error de conexión:', error);
-        // Solo mostrar errores, estos sí son importantes
         showNotification('Error de conexión con el servidor', 'danger', true);
+    }
+}
+
+/**
+ * @brief Carga las estadísticas del dashboard
+ * @details Obtiene y muestra todas las estadísticas del dashboard principal
+ * @version 1.0
+ */
+async function cargarEstadisticasDashboard() {
+    try {
+        console.log('📊 Cargando estadísticas del dashboard...');
+        
+        // Cargar estadísticas principales
+        const response = await fetch('/api/dashboard/estadisticas');
+        const data = await response.json();
+        
+        if (data.success) {
+            const stats = data.estadisticas;
+            
+            // Actualizar contadores con animación
+            actualizarContador('total-clientes', stats.total_clientes);
+            actualizarContador('total-productos', stats.total_productos);
+            actualizarContador('pedidos-pendientes', stats.pedidos_pendientes);
+            actualizarContador('facturas-mes', stats.facturas_mes);
+            
+            console.log('✅ Estadísticas cargadas correctamente');
+        } else {
+            console.warn('⚠️ Error en estadísticas:', data.error);
+            // Mostrar valores por defecto
+            actualizarContador('total-clientes', 0);
+            actualizarContador('total-productos', 0);
+            actualizarContador('pedidos-pendientes', 0);
+            actualizarContador('facturas-mes', 0);
+        }
+        
+        // Cargar actividad reciente
+        await cargarActividadReciente();
+        
+        // Cargar alertas de stock
+        await cargarAlertasStock();
+        
+    } catch (error) {
+        console.error('❌ Error al cargar estadísticas:', error);
+        
+        // Mostrar valores por defecto en caso de error
+        actualizarContador('total-clientes', 0);
+        actualizarContador('total-productos', 0);
+        actualizarContador('pedidos-pendientes', 0);
+        actualizarContador('facturas-mes', 0);
+        
+        showNotification('Error al cargar estadísticas del dashboard', 'warning');
+    }
+}
+
+/**
+ * @brief Actualiza un contador con animación
+ * @param elementId ID del elemento a actualizar
+ * @param valor Valor final del contador
+ * @version 1.0
+ */
+function actualizarContador(elementId, valor) {
+    const elemento = document.getElementById(elementId);
+    if (!elemento) return;
+    
+    // Animación de contador
+    const valorActual = 0;
+    const incremento = valor / 20; // 20 pasos para la animación
+    let contador = 0;
+    
+    const interval = setInterval(() => {
+        contador += incremento;
+        if (contador >= valor) {
+            elemento.textContent = valor;
+            clearInterval(interval);
+        } else {
+            elemento.textContent = Math.floor(contador);
+        }
+    }, 50);
+}
+
+/**
+ * @brief Carga la actividad reciente del sistema con enlaces clicables
+ * @version 2.0
+ */
+async function cargarActividadReciente() {
+    try {
+        const response = await fetch('/api/dashboard/actividad');
+        const data = await response.json();
+        
+        const container = document.getElementById('actividad-reciente');
+        if (!container) return;
+        
+        if (data.success && data.actividades.length > 0) {
+            let html = '';
+            data.actividades.forEach(actividad => {
+                const fecha = new Date(actividad.fecha).toLocaleString('es-ES', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Determinar si el elemento es clicable
+                const esClicable = actividad.enlace && actividad.elemento_id && actividad.elemento_tipo;
+                const cursorClass = esClicable ? 'cursor-pointer' : '';
+                const onClickHandler = esClicable ? 
+                    `onclick="manejarClickActividad('${actividad.elemento_tipo}', ${actividad.elemento_id}, '${actividad.enlace}')"` : 
+                    '';
+                
+                html += `
+                    <div class="activity-item d-flex align-items-center ${cursorClass}" ${onClickHandler}>
+                        <div class="me-3">
+                            <i class="fas ${actividad.icono} text-${actividad.color}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold ${esClicable ? 'text-primary' : ''}">${actividad.mensaje}</div>
+                            <small class="text-muted">${fecha}</small>
+                            ${esClicable ? '<small class="text-info d-block"><i class="fas fa-mouse-pointer me-1"></i>Clic para ver detalles</small>' : ''}
+                        </div>
+                        ${esClicable ? '<div class="text-primary"><i class="fas fa-chevron-right"></i></div>' : ''}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No hay actividad reciente</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error al cargar actividad:', error);
+        const container = document.getElementById('actividad-reciente');
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <p class="text-muted mb-0">Error al cargar actividad</p>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * @brief Maneja el clic en elementos de actividad reciente
+ * @param tipo Tipo de elemento (cliente, producto)
+ * @param elementoId ID del elemento
+ * @param enlaceBase Enlace base donde navegar
+ * @version 1.0
+ */
+function manejarClickActividad(tipo, elementoId, enlaceBase) {
+    console.log(`🖱️ Click en ${tipo} ID: ${elementoId}`);
+    
+    if (tipo === 'cliente') {
+        // Para clientes: ir a la lista y abrir modal de detalles
+        window.location.href = `${enlaceBase}?ver=${elementoId}`;
+    } else if (tipo === 'producto') {
+        // Para productos: ir a la lista y abrir modal de detalles
+        window.location.href = `${enlaceBase}?ver=${elementoId}`;
+    } else {
+        // Para otros tipos, solo navegar al enlace base
+        window.location.href = enlaceBase;
+    }
+}
+
+/**
+ * @brief Carga las alertas de stock bajo con enlaces
+ * @version 1.1
+ */
+async function cargarAlertasStock() {
+    try {
+        const response = await fetch('/api/dashboard/stock-bajo');
+        const data = await response.json();
+        
+        const container = document.getElementById('alertas-stock');
+        if (!container) return;
+        
+        if (data.success && data.productos.length > 0) {
+            let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Producto</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Acciones</th></tr></thead><tbody>';
+            
+            data.productos.forEach(producto => {
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${producto.nombre}</strong><br>
+                            <small class="text-muted">${producto.codigo}</small>
+                        </td>
+                        <td><span class="badge bg-danger">${producto.stock_actual}</span></td>
+                        <td>${producto.stock_minimo}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="manejarClickActividad('producto', ${producto.id}, '/productos')"
+                                    title="Ver detalles del producto">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <p class="text-muted mb-0">Todos los productos tienen stock suficiente</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error al cargar alertas de stock:', error);
+        const container = document.getElementById('alertas-stock');
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <p class="text-muted mb-0">Error al verificar stock</p>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * @brief Actualiza el reloj en tiempo real
+ * @version 1.0
+ */
+function actualizarReloj() {
+    const elemento = document.getElementById('current-time');
+    if (elemento) {
+        const ahora = new Date();
+        const tiempo = ahora.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        elemento.textContent = tiempo;
     }
 }
 
@@ -88,7 +331,6 @@ function initializeTooltips() {
  * @version 1.0
  */
 function setupNotifications() {
-    // Crear contenedor de notificaciones si no existe
     if (!document.getElementById('notifications-container')) {
         const container = document.createElement('div');
         container.id = 'notifications-container';
@@ -123,7 +365,6 @@ function showNotification(message, type = 'info', persistent = false) {
     
     container.insertAdjacentHTML('beforeend', alertHTML);
     
-    // Auto-remover si no es persistente
     if (!persistent) {
         setTimeout(() => {
             const alert = document.getElementById(alertId);
@@ -246,7 +487,6 @@ function handleFormSubmit(formId, submitHandler) {
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             
-            // Mostrar loading
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
             
@@ -256,7 +496,6 @@ function handleFormSubmit(formId, submitHandler) {
                 showNotification('Error al procesar el formulario', 'danger');
                 console.error('Error:', error);
             } finally {
-                // Restaurar botón
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }
@@ -320,9 +559,11 @@ window.ERPFarmacias = {
     openModal,
     closeModal,
     cargarEstadisticasDashboard,
-    actualizarContador
+    actualizarContador,
+    manejarClickActividad
 };
 
 // También hacer disponibles las funciones principales globalmente
 window.cargarEstadisticasDashboard = cargarEstadisticasDashboard;
 window.actualizarContador = actualizarContador;
+window.manejarClickActividad = manejarClickActividad;

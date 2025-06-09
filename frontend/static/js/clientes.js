@@ -4,8 +4,8 @@
  * @details Funciones para manejar las operaciones CRUD de clientes,
  *          búsquedas, validaciones y modales.
  * @author José David Sánchez Fernández
- * @version 1.0
- * @date 2025-06-06
+ * @version 1.3
+ * @date 2025-06-09
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
 
@@ -14,11 +14,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Inicializar funcionalidades
     inicializarClientes();
+    
+    // Verificar si hay que mostrar detalles automáticamente
+    verificarParametroVer();
 });
 
 /**
- * @brief Inicializa todas las funcionalidades del módulo de clientes
+ * @brief Verifica si hay parámetro 'ver' en URL para mostrar detalles automáticamente
  * @version 1.0
+ */
+function verificarParametroVer() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const clienteId = urlParams.get('ver');
+    
+    if (clienteId) {
+        console.log(`📋 Mostrando detalles automáticos del cliente ID: ${clienteId}`);
+        setTimeout(() => {
+            verDetalleCliente(clienteId);
+        }, 500); // Pequeña espera para que se cargue la página
+    }
+}
+
+/**
+ * @brief Inicializa todas las funcionalidades del módulo de clientes
+ * @version 1.2
  */
 function inicializarClientes() {
     // Configurar búsqueda en tiempo real
@@ -27,9 +46,42 @@ function inicializarClientes() {
     // Inicializar tooltips
     inicializarTooltips();
     
+    // Configurar event listeners para botones
+    configurarEventListeners();
+    
     // Configurar validaciones de formulario
     if (document.getElementById('formCliente')) {
         configurarFormularioCliente();
+    }
+}
+
+/**
+ * @brief Configura todos los event listeners de la página
+ * @version 1.0
+ */
+function configurarEventListeners() {
+    // Event listeners para botones de ver detalle
+    document.querySelectorAll('.btn-ver-detalle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const clienteId = this.dataset.clienteId;
+            verDetalleCliente(clienteId);
+        });
+    });
+    
+    // Event listeners para botones de eliminar
+    document.querySelectorAll('.btn-eliminar-cliente').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const clienteId = this.dataset.clienteId;
+            const clienteNombre = this.dataset.clienteNombre;
+            eliminarCliente(clienteId, clienteNombre);
+        });
+    });
+    
+    // Event listener para botón de exportar
+    const btnExportar = document.querySelector('[onclick="exportarClientes()"]');
+    if (btnExportar) {
+        btnExportar.removeAttribute('onclick');
+        btnExportar.addEventListener('click', exportarClientes);
     }
 }
 
@@ -56,7 +108,7 @@ function configurarBusqueda() {
 /**
  * @brief Muestra los detalles de un cliente en un modal
  * @param clienteId ID del cliente a mostrar
- * @version 1.0
+ * @version 1.1
  */
 async function verDetalleCliente(clienteId) {
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleCliente'));
@@ -75,7 +127,7 @@ async function verDetalleCliente(clienteId) {
         const response = await fetch(`/clientes/api/detalle/${clienteId}`);
         const data = await response.json();
         
-        if (response.ok) {
+        if (response.ok && data.cliente) {
             mostrarDetalleCliente(data);
         } else {
             throw new Error(data.error || 'Error al cargar cliente');
@@ -93,13 +145,13 @@ async function verDetalleCliente(clienteId) {
 }
 
 /**
- * @brief Muestra los detalles del cliente en el modal
+ * @brief Muestra los detalles del cliente en el modal incluyendo las notas
  * @param data Datos del cliente obtenidos de la API
- * @version 1.0
+ * @version 1.1
  */
 function mostrarDetalleCliente(data) {
     const cliente = data.cliente;
-    const estadisticas = data.estadisticas;
+    const estadisticas = data.estadisticas || {};
     
     const contenido = document.getElementById('detalleClienteContent');
     contenido.innerHTML = `
@@ -164,7 +216,7 @@ function mostrarDetalleCliente(data) {
                     <div class="col-6">
                         <div class="card bg-light">
                             <div class="card-body text-center p-3">
-                                <h4 class="text-primary mb-1">${estadisticas.total_pedidos}</h4>
+                                <h4 class="text-primary mb-1">${estadisticas.total_pedidos || 0}</h4>
                                 <small class="text-muted">Total Pedidos</small>
                             </div>
                         </div>
@@ -183,31 +235,35 @@ function mostrarDetalleCliente(data) {
                         </div>
                     </div>
                 </div>
-                
-                ${cliente.notas ? `
-                <div class="mt-3">
-                    <h6 class="text-primary mb-2">
-                        <i class="fas fa-sticky-note me-2"></i>
-                        Notas
-                    </h6>
-                    <div class="alert alert-light">
-                        ${cliente.notas}
-                    </div>
-                </div>
-                ` : ''}
             </div>
         </div>
         
-        <div class="mt-4 d-flex justify-content-end gap-2">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">
-                <i class="fas fa-times me-1"></i>Cerrar
-            </button>
-            <a href="/clientes/editar/${cliente.id}" class="btn btn-warning">
-                <i class="fas fa-edit me-1"></i>Editar Cliente
-            </a>
-            <button class="btn btn-primary" onclick="crearPedidoCliente(${cliente.id})">
-                <i class="fas fa-plus me-1"></i>Nuevo Pedido
-            </button>
+        ${cliente.notas ? `
+        <div class="row mt-4">
+            <div class="col-12">
+                <h6 class="text-primary mb-2">
+                    <i class="fas fa-sticky-note me-2"></i>
+                    Notas del Cliente
+                </h6>
+                <div class="alert alert-light border">
+                    <div class="text-muted">${cliente.notas}</div>
+                </div>
+            </div>
+        </div>
+        ` : ''}
+        
+        <div class="row mt-4">
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cerrar
+                </button>
+                <a href="/clientes/editar/${cliente.id}" class="btn btn-warning">
+                    <i class="fas fa-edit me-1"></i>Editar Cliente
+                </a>
+                <button class="btn btn-primary" onclick="crearPedidoCliente(${cliente.id})">
+                    <i class="fas fa-plus me-1"></i>Nuevo Pedido
+                </button>
+            </div>
         </div>
     `;
 }
@@ -318,6 +374,8 @@ function validarFormularioCliente() {
  */
 function validarCampo(campo) {
     const input = document.getElementById(campo);
+    if (!input) return true;
+    
     const valor = input.value.trim();
     
     switch(campo) {
@@ -372,7 +430,7 @@ function mostrarErrorCampo(campo, mensaje) {
     const input = document.getElementById(campo);
     const errorDiv = document.getElementById(`error-${campo}`);
     
-    input.classList.add('is-invalid');
+    if (input) input.classList.add('is-invalid');
     if (errorDiv) {
         errorDiv.textContent = mensaje;
         errorDiv.style.display = 'block';
@@ -388,7 +446,7 @@ function limpiarError(campo) {
     const input = document.getElementById(campo);
     const errorDiv = document.getElementById(`error-${campo}`);
     
-    input.classList.remove('is-invalid');
+    if (input) input.classList.remove('is-invalid');
     if (errorDiv) {
         errorDiv.style.display = 'none';
     }
@@ -420,7 +478,7 @@ async function guardarCliente() {
         // Manejar checkbox de activo
         data.activo = form.querySelector('#activo') ? form.querySelector('#activo').checked : true;
         
-        console.log('📤 Datos a enviar:', data);  // Debug log
+        console.log('📤 Datos a enviar:', data);
         
         // Determinar si es creación o actualización
         const clienteId = document.getElementById('cliente_id');
@@ -432,7 +490,7 @@ async function guardarCliente() {
         
         const method = esEdicion ? 'PUT' : 'POST';
         
-        console.log(`📤 Enviando ${method} a ${url}`);  // Debug log
+        console.log(`📤 Enviando ${method} a ${url}`);
         
         const response = await fetch(url, {
             method: method,
@@ -442,10 +500,10 @@ async function guardarCliente() {
             body: JSON.stringify(data)
         });
         
-        console.log('📥 Response status:', response.status);  // Debug log
+        console.log('📥 Response status:', response.status);
         
         const result = await response.json();
-        console.log('📥 Response data:', result);  // Debug log
+        console.log('📥 Response data:', result);
         
         if (result.success) {
             showNotification(result.message, 'success');
@@ -496,6 +554,28 @@ function inicializarTooltips() {
 }
 
 /**
+ * @brief Valida si un email tiene formato correcto
+ * @param email Email a validar
+ * @return Boolean true si es válido, false en caso contrario
+ * @version 1.0
+ */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+/**
+ * @brief Valida si un número de teléfono tiene formato correcto
+ * @param phone Teléfono a validar
+ * @return Boolean true si es válido, false en caso contrario
+ * @version 1.0
+ */
+function isValidPhone(phone) {
+    const phoneRegex = /^[+]?[0-9\s\-\(\)]{9,}$/;
+    return phoneRegex.test(phone);
+}
+
+/**
  * @brief Muestra una notificación (fallback si no está disponible globalmente)
  * @param message Mensaje a mostrar
  * @param type Tipo de notificación
@@ -508,10 +588,9 @@ function showNotification(message, type = 'info') {
         return;
     }
     
-    // Fallback: mostrar con alert
+    // Fallback: crear notificación simple
     console.log(`${type.toUpperCase()}: ${message}`);
     
-    // Crear notificación simple
     const alertClass = type === 'success' ? 'alert-success' : 
                      type === 'danger' ? 'alert-danger' : 'alert-info';
     

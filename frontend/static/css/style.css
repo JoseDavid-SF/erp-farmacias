@@ -1,12 +1,9 @@
 /**
  * @file style.css
  * @brief Estilos principales del ERP de proveedor autónomo de farmacias
- * @details Hoja de estilos que define el diseño visual y la experiencia
- *          de usuario del sistema ERP, incluyendo responsive design.
  * @author José David Sánchez Fernández
- * @version 5.0
- * @date 2025-06-06
- * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
+ * @version 6.2
+ * @date 2025-06-09
  */
 
 /* Variables CSS */
@@ -49,7 +46,7 @@ body {
     color: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* Tarjetas */
+/* Tarjetas base */
 .card {
     border: none;
     border-radius: var(--border-radius);
@@ -68,26 +65,26 @@ body {
     font-weight: 600;
 }
 
-/* Tarjetas de estadísticas con bordes de colores */
-.border-left-primary {
-    border-left: 0.25rem solid var(--primary-color) !important;
+/* Tarjetas clicables del dashboard */
+.card-clickable {
+    cursor: pointer;
 }
 
-.border-left-success {
-    border-left: 0.25rem solid var(--success-color) !important;
+.card-clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);
 }
 
-.border-left-warning {
-    border-left: 0.25rem solid var(--warning-color) !important;
+.card-clickable:hover .card-body {
+    background-color: rgba(0, 123, 255, 0.05);
 }
 
-.border-left-info {
-    border-left: 0.25rem solid var(--info-color) !important;
-}
-
-.border-left-danger {
-    border-left: 0.25rem solid var(--danger-color) !important;
-}
+/* Tarjetas con bordes de colores */
+.border-left-primary { border-left: 0.25rem solid var(--primary-color) !important; }
+.border-left-success { border-left: 0.25rem solid var(--success-color) !important; }
+.border-left-warning { border-left: 0.25rem solid var(--warning-color) !important; }
+.border-left-info { border-left: 0.25rem solid var(--info-color) !important; }
+.border-left-danger { border-left: 0.25rem solid var(--danger-color) !important; }
 
 /* Botones */
 .btn {
@@ -102,59 +99,6 @@ body {
 
 .btn-lg {
     padding: 0.75rem 1.5rem;
-}
-
-/* Breadcrumb */
-.breadcrumb {
-    background-color: transparent;
-    padding: 0;
-    margin-bottom: 1rem;
-}
-
-.breadcrumb-item + .breadcrumb-item::before {
-    content: ">";
-    color: #6c757d;
-}
-
-/* Iconos */
-.fas, .far {
-    margin-right: 0.5rem;
-}
-
-/* Colores de texto personalizados */
-.text-primary { color: var(--primary-color) !important; }
-.text-success { color: var(--success-color) !important; }
-.text-warning { color: var(--warning-color) !important; }
-.text-danger { color: var(--danger-color) !important; }
-.text-info { color: var(--info-color) !important; }
-
-/* Estados y badges */
-.badge {
-    font-weight: 500;
-    padding: 0.5rem 0.75rem;
-}
-
-/* Alertas */
-.alert {
-    border: none;
-    border-radius: var(--border-radius);
-    font-weight: 500;
-}
-
-/* Footer */
-.footer {
-    margin-top: auto;
-    border-top: 1px solid #e9ecef;
-}
-
-/* Actividad reciente */
-.activity-item {
-    border-bottom: 1px solid #e9ecef;
-    padding: 0.75rem 0;
-}
-
-.activity-item:last-child {
-    border-bottom: none;
 }
 
 /* Formularios */
@@ -172,6 +116,18 @@ body {
 .form-label {
     font-weight: 600;
     color: var(--dark-color);
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--danger-color);
+}
+
+.is-invalid ~ .invalid-feedback {
+    display: block;
 }
 
 /* Tablas */
@@ -192,6 +148,181 @@ body {
     background-color: rgba(13, 110, 253, 0.05);
 }
 
+/* Actividad reciente */
+.activity-item {
+    border-bottom: 1px solid #e9ecef;
+    padding: 0.75rem 0;
+    transition: all 0.3s ease;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+/* Elementos clicables en actividad reciente */
+.activity-item.cursor-pointer {
+    cursor: pointer;
+    border-radius: 0.375rem;
+    margin: 0.25rem 0;
+    padding: 0.75rem;
+    background-color: transparent;
+}
+
+.activity-item.cursor-pointer:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    border-color: rgba(13, 110, 253, 0.2);
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.activity-item.cursor-pointer:hover .fw-bold {
+    color: var(--primary-color) !important;
+}
+
+.activity-item.cursor-pointer:hover .fas.fa-chevron-right {
+    transform: translateX(3px);
+}
+
+/* Cursor pointer general */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Alertas */
+.alert {
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: ">";
+    color: #6c757d;
+}
+
+/* Estados y badges */
+.badge {
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Loading spinner personalizado */
+.spinner-custom {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+/* Productos */
+.producto-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.producto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.15);
+}
+
+.producto-imagen {
+    border-radius: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.producto-imagen:hover {
+    transform: scale(1.05);
+}
+
+.producto-imagen-placeholder {
+    border: 2px dashed #e9ecef;
+    border-radius: 0.5rem;
+}
+
+/* Estilos para elementos destacados */
+.text-highlight {
+    background-color: rgba(255, 193, 7, 0.2);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+}
+
+/* Transiciones suaves para iconos */
+.fas {
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+/* Estilos para notificaciones de actividad */
+.text-info.d-block {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* Mejoras en responsividad para actividad reciente */
+@media (max-width: 768px) {
+    .activity-item.cursor-pointer:hover {
+        transform: none;
+    }
+    
+    .activity-item .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .activity-item .text-primary {
+        margin-top: 0.5rem;
+        align-self: flex-end;
+    }
+}
+
+/* Animaciones */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+.bounce-in {
+    animation: bounceIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-10px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+    border-top: 1px solid #e9ecef;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .card-body .row .col-md-6 {
@@ -206,51 +337,13 @@ body {
     .h5 {
         font-size: 1.1rem;
     }
-}
-
-/* Animaciones */
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.slide-in {
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(-10px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-/* Loading spinner personalizado */
-.spinner-custom {
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid var(--primary-color);
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Sombras personalizadas */
-.shadow-sm-custom {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-}
-
-.shadow-custom {
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1) !important;
-}
-
-.shadow-lg-custom {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    
+    .card-header .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
 }

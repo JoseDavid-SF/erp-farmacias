@@ -7,8 +7,8 @@
 @details Archivo principal que inicializa Flask, configura la base de datos
          y define las rutas principales del sistema.
 @author José David Sánchez Fernández
-@version 6.0
-@date 2025-06-06
+@version 6.1
+@date 2025-06-09
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -43,6 +43,12 @@ def create_app(config_name=None):
     
     # Registrar blueprints
     from routes.clientes import clientes_bp
+    try:
+        from routes.productos import productos_bp
+        app.register_blueprint(productos_bp)
+    except ImportError:
+        print("⚠️ Blueprint de productos no encontrado")
+    
     app.register_blueprint(clientes_bp)
     
     # Crear las tablas de la base de datos
@@ -121,15 +127,24 @@ def create_app(config_name=None):
             # Estadísticas de clientes
             total_clientes = Cliente.query.filter_by(activo=True).count()
             
-            # Estadísticas de productos (placeholder - implementaremos después)
-            total_productos = Producto.query.filter_by(activo=True).count()
+            # Estadísticas de productos - manejar si no existe la tabla
+            try:
+                total_productos = Producto.query.filter_by(activo=True).count()
+            except:
+                total_productos = 0
             
-            # Estadísticas de pedidos (placeholder - implementaremos después)
-            pedidos_pendientes = Pedido.query.filter_by(estado='pendiente').count()
+            # Estadísticas de pedidos - manejar si no existe la tabla
+            try:
+                pedidos_pendientes = Pedido.query.filter_by(estado='pendiente').count()
+            except:
+                pedidos_pendientes = 0
             
-            # Estadísticas de facturas del mes actual
-            inicio_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            facturas_mes = Factura.query.filter(Factura.fecha_factura >= inicio_mes).count()
+            # Estadísticas de facturas del mes actual - manejar si no existe la tabla
+            try:
+                inicio_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                facturas_mes = Factura.query.filter(Factura.fecha_factura >= inicio_mes).count()
+            except:
+                facturas_mes = 0
             
             return jsonify({
                 'success': True,
@@ -142,10 +157,167 @@ def create_app(config_name=None):
             })
             
         except Exception as e:
+            print(f"❌ Error en estadísticas: {str(e)}")
             return jsonify({
                 'success': False,
-                'error': f'Error al obtener estadísticas: {str(e)}'
+                'error': f'Error al obtener estadísticas: {str(e)}',
+                'estadisticas': {
+                    'total_clientes': 0,
+                    'total_productos': 0,
+                    'pedidos_pendientes': 0,
+                    'facturas_mes': 0
+                }
             }), 500
+    
+    @app.route('/api/dashboard/actividad')
+    def api_dashboard_actividad():
+        """
+        @brief API para obtener actividad reciente del dashboard con enlaces
+        @return JSON con actividad reciente del sistema incluyendo enlaces
+        @version 2.0
+        """
+        try:
+            from models.models import Cliente, Producto, Pedido
+            from datetime import datetime, timedelta
+            
+            actividades = []
+            
+            # Últimos clientes creados
+            clientes_recientes = Cliente.query.order_by(Cliente.fecha_creacion.desc()).limit(3).all()
+            for cliente in clientes_recientes:
+                actividades.append({
+                    'tipo': 'cliente_nuevo',
+                    'mensaje': f'Nuevo cliente: {cliente.nombre}',
+                    'fecha': cliente.fecha_creacion.isoformat(),
+                    'icono': 'fa-user-plus',
+                    'color': 'success',
+                    'enlace': f'/clientes',
+                    'elemento_id': cliente.id,
+                    'elemento_tipo': 'cliente'
+                })
+            
+            # Últimos productos creados
+            try:
+                productos_recientes = Producto.query.order_by(Producto.fecha_creacion.desc()).limit(3).all()
+                for producto in productos_recientes:
+                    actividades.append({
+                        'tipo': 'producto_nuevo',
+                        'mensaje': f'Nuevo producto: {producto.nombre}',
+                        'fecha': producto.fecha_creacion.isoformat(),
+                        'icono': 'fa-box',
+                        'color': 'info',
+                        'enlace': f'/productos',
+                        'elemento_id': producto.id,
+                        'elemento_tipo': 'producto'
+                    })
+            except:
+                pass  # Si no existe la tabla productos
+            
+            # Productos con stock bajo (últimos detectados)
+            try:
+                productos_stock_bajo = Producto.query.filter(
+                    Producto.activo == True,
+                    Producto.stock <= Producto.stock_minimo
+                ).order_by(Producto.stock.asc()).limit(2).all()
+                
+                for producto in productos_stock_bajo:
+                    actividades.append({
+                        'tipo': 'stock_bajo',
+                        'mensaje': f'Stock bajo: {producto.nombre} ({producto.stock} unidades)',
+                        'fecha': datetime.now().isoformat(),
+                        'icono': 'fa-exclamation-triangle',
+                        'color': 'warning',
+                        'enlace': f'/productos',
+                        'elemento_id': producto.id,
+                        'elemento_tipo': 'producto'
+                    })
+            except:
+                pass  # Si no existe la tabla productos
+            
+            # Ordenar por fecha (más recientes primero)
+            actividades.sort(key=lambda x: x['fecha'], reverse=True)
+            
+            # Actividad de muestra si no hay datos
+            if not actividades:
+                actividades = [
+                    {
+                        'tipo': 'sistema',
+                        'mensaje': 'Sistema iniciado correctamente',
+                        'fecha': datetime.now().isoformat(),
+                        'icono': 'fa-check-circle',
+                        'color': 'success',
+                        'enlace': None,
+                        'elemento_id': None,
+                        'elemento_tipo': None
+                    },
+                    {
+                        'tipo': 'info',
+                        'mensaje': 'ERP listo para usar',
+                        'fecha': datetime.now().isoformat(),
+                        'icono': 'fa-info-circle',
+                        'color': 'info',
+                        'enlace': None,
+                        'elemento_id': None,
+                        'elemento_tipo': None
+                    }
+                ]
+            
+            return jsonify({
+                'success': True,
+                'actividades': actividades[:5]  # Últimas 5 actividades
+            })
+            
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'Error al obtener actividad: {str(e)}',
+                'actividades': []
+            })
+    
+    @app.route('/api/dashboard/stock-bajo')
+    def api_dashboard_stock_bajo():
+        """
+        @brief API para obtener productos con stock bajo
+        @return JSON con productos que requieren reabastecimiento
+        @version 1.0
+        """
+        try:
+            from models.models import Producto
+            
+            # Buscar productos con stock bajo
+            try:
+                productos_stock_bajo = Producto.query.filter(
+                    Producto.stock <= Producto.stock_minimo,
+                    Producto.activo == True
+                ).all()
+                
+                productos = []
+                for producto in productos_stock_bajo:
+                    productos.append({
+                        'id': producto.id,
+                        'nombre': producto.nombre,
+                        'codigo': producto.codigo,
+                        'stock_actual': producto.stock,
+                        'stock_minimo': producto.stock_minimo
+                    })
+                
+                return jsonify({
+                    'success': True,
+                    'productos': productos
+                })
+                
+            except:
+                return jsonify({
+                    'success': True,
+                    'productos': []
+                })
+            
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'Error al obtener stock bajo: {str(e)}',
+                'productos': []
+            })
     
     return app
 
