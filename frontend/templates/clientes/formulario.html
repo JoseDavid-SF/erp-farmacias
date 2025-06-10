@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
 <li class="breadcrumb-item"><a href="{{ url_for('clientes.lista_clientes') }}">Clientes</a></li>
 <li class="breadcrumb-item active">
     {% if cliente %}Editar Cliente{% else %}Nuevo Cliente{% endif %}

@@ -1,17 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - ERP Farmacias{% endblock %}
+{% block title %}Inicio - Mega Nevada{% endblock %}
+
+{% block breadcrumb %}
+<!-- Sin breadcrumb en la home -->
+{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 mb-0">Dashboard</h1>
+            <h1 class="h3 mb-0">Inicio</h1>
             <div class="d-flex gap-2">
                 <span class="badge bg-success fs-6">
                     <i class="fas fa-circle me-1"></i>Sistema Activo
                 </span>
-                <span class="badge bg-info fs-6" id="current-time"></span>
             </div>
         </div>
     </div>
@@ -116,27 +119,27 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <button class="btn btn-primary btn-lg w-100" onclick="window.location.href='/pedidos/nuevo'">
-                            <i class="fas fa-plus me-2"></i>
-                            Nuevo Pedido
-                        </button>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <button class="btn btn-success btn-lg w-100" onclick="window.location.href='/clientes/nuevo'">
+                        <button class="btn btn-primary btn-lg w-100" onclick="window.location.href='/clientes/nuevo'">
                             <i class="fas fa-user-plus me-2"></i>
-                            Nuevo Cliente
+                            Añadir Cliente
                         </button>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <button class="btn btn-info btn-lg w-100" onclick="window.location.href='/productos/nuevo'">
+                        <button class="btn btn-success btn-lg w-100" onclick="window.location.href='/productos/nuevo'">
                             <i class="fas fa-box me-2"></i>
-                            Nuevo Producto
+                            Añadir Producto
                         </button>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <button class="btn btn-warning btn-lg w-100" onclick="window.location.href='/productos/'">
-                            <i class="fas fa-warehouse me-2"></i>
-                            Ver Stock
+                        <button class="btn btn-warning btn-lg w-100" onclick="window.location.href='/pedidos/nuevo'">
+                            <i class="fas fa-plus me-2"></i>
+                            Añadir Pedido
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-info btn-lg w-100" onclick="window.location.href='/facturas/nueva'">
+                            <i class="fas fa-file-invoice me-2"></i>
+                            Añadir Factura
                         </button>
                     </div>
                 </div>

@@ -75,7 +75,7 @@ Sistema ERP completo desarrollado específicamente para proveedores autónomos d
    ```
 
 6. **Acceder al sistema:**
-   - Dashboard: http://localhost:5000
+   - home: http://localhost:5000
    - API Test: http://localhost:5000/api/test
 
 ## Estructura del Proyecto
@@ -120,7 +120,7 @@ MAIL_PASSWORD=tu_password
 
 ## Uso del Sistema
 
-### Dashboard Principal
+### home Principal
 - Estadísticas en tiempo real
 - Acciones rápidas
 - Actividad reciente
@@ -195,7 +195,7 @@ Para soporte técnico o consultas:
 
 ### v6.0 (2025-06-06)
 - Sistema completo funcional
-- Dashboard implementado
+- home implementado
 - Conexión PostgreSQL establecida
 - Documentación Doxygen completa
 

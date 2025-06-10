@@ -4,7 +4,7 @@
  * @details Funciones para manejar las operaciones CRUD de productos,
  *          búsquedas, validaciones y control de stock.
  * @author José David Sánchez Fernández
- * @version 1.3
+ * @version 1.4
  * @date 2025-06-09
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
@@ -229,7 +229,7 @@ function extraerDatosProductoDelDOM(card, productoId) {
 /**
  * @brief Muestra los detalles del producto en el modal
  * @param producto Datos del producto obtenidos de la API o DOM
- * @version 1.0
+ * @version 1.1
  */
 function mostrarDetalleProducto(producto) {
     const contenido = document.getElementById('detalleProductoContent');
@@ -250,9 +250,9 @@ function mostrarDetalleProducto(producto) {
         textoStock = 'Agotado';
         badgeClass = 'bg-danger';
     } else if (stock <= stockMinimo) {
-        estadoStock = 'text-warning';
+        estadoStock = 'text-danger';
         textoStock = 'Stock bajo';
-        badgeClass = 'bg-warning';
+        badgeClass = 'bg-danger';
     }
     
     contenido.innerHTML = `
@@ -415,7 +415,7 @@ function agregarAPedido(productoId) {
 
 /**
  * @brief Configura las validaciones del formulario de producto
- * @version 1.0
+ * @version 1.1
  */
 function configurarFormularioProducto() {
     const form = document.getElementById('formProducto');
@@ -425,11 +425,28 @@ function configurarFormularioProducto() {
         return;
     }
     
+    // Verificar si ya está configurado para evitar dobles event listeners
+    if (form.dataset.configured === 'true') {
+        console.log('⚠️ Formulario ya configurado, saltando...');
+        return;
+    }
+    
     console.log('✅ Configurando formulario de producto');
+    
+    // Marcar como configurado
+    form.dataset.configured = 'true';
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopPropagation();
         console.log('📝 Formulario de producto enviado');
+        
+        // Verificar si ya se está procesando
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn.disabled) {
+            console.log('⚠️ Formulario ya en proceso, ignorando...');
+            return;
+        }
         
         if (validarFormularioProducto()) {
             await guardarProducto();

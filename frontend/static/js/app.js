@@ -15,9 +15,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar componentes
     initializeApp();
     
-    // Cargar datos del dashboard si estamos en la página principal
+    // Cargar datos del home si estamos en la página principal
     if (window.location.pathname === '/' || window.location.pathname === '') {
-        cargarEstadisticasDashboard();
+        cargarEstadisticasHome();
         actualizarReloj();
         setInterval(actualizarReloj, 1000);
     }
@@ -54,7 +54,7 @@ async function checkAPIConnection() {
         if (data.status === 'success') {
             console.log('✅ Conexión con API exitosa');
             
-            // Solo mostrar notificación en el dashboard principal
+            // Solo mostrar notificación en el home principal
             if (window.location.pathname === '/' || window.location.pathname === '') {
                 const yaNotificado = sessionStorage.getItem('sistema_conectado_notificado');
                 
@@ -71,16 +71,16 @@ async function checkAPIConnection() {
 }
 
 /**
- * @brief Carga las estadísticas del dashboard
- * @details Obtiene y muestra todas las estadísticas del dashboard principal
+ * @brief Carga las estadísticas del home
+ * @details Obtiene y muestra todas las estadísticas del home principal
  * @version 1.0
  */
-async function cargarEstadisticasDashboard() {
+async function cargarEstadisticasHome() {
     try {
-        console.log('📊 Cargando estadísticas del dashboard...');
+        console.log('📊 Cargando estadísticas del home...');
         
         // Cargar estadísticas principales
-        const response = await fetch('/api/dashboard/estadisticas');
+        const response = await fetch('/api/home/estadisticas');
         const data = await response.json();
         
         if (data.success) {
@@ -117,7 +117,7 @@ async function cargarEstadisticasDashboard() {
         actualizarContador('pedidos-pendientes', 0);
         actualizarContador('facturas-mes', 0);
         
-        showNotification('Error al cargar estadísticas del dashboard', 'warning');
+        showNotification('Error al cargar estadísticas del home', 'warning');
     }
 }
 
@@ -153,7 +153,7 @@ function actualizarContador(elementId, valor) {
  */
 async function cargarActividadReciente() {
     try {
-        const response = await fetch('/api/dashboard/actividad');
+        const response = await fetch('/api/home/actividad');
         const data = await response.json();
         
         const container = document.getElementById('actividad-reciente');
@@ -184,7 +184,6 @@ async function cargarActividadReciente() {
                         <div class="flex-grow-1">
                             <div class="fw-bold ${esClicable ? 'text-primary' : ''}">${actividad.mensaje}</div>
                             <small class="text-muted">${fecha}</small>
-                            ${esClicable ? '<small class="text-info d-block"><i class="fas fa-mouse-pointer me-1"></i>Clic para ver detalles</small>' : ''}
                         </div>
                         ${esClicable ? '<div class="text-primary"><i class="fas fa-chevron-right"></i></div>' : ''}
                     </div>
@@ -241,22 +240,20 @@ function manejarClickActividad(tipo, elementoId, enlaceBase) {
  */
 async function cargarAlertasStock() {
     try {
-        const response = await fetch('/api/dashboard/stock-bajo');
+        const response = await fetch('/api/home/stock-bajo');
         const data = await response.json();
         
         const container = document.getElementById('alertas-stock');
         if (!container) return;
         
         if (data.success && data.productos.length > 0) {
-            let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Producto</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Acciones</th></tr></thead><tbody>';
+            let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Producto</th><th>Código</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Acciones</th></tr></thead><tbody>';
             
             data.productos.forEach(producto => {
                 html += `
                     <tr>
-                        <td>
-                            <strong>${producto.nombre}</strong><br>
-                            <small class="text-muted">${producto.codigo}</small>
-                        </td>
+                        <td><strong>${producto.nombre}</strong></td>
+                        <td><small class="text-muted">${producto.codigo}</small></td>
                         <td><span class="badge bg-danger">${producto.stock_actual}</span></td>
                         <td>${producto.stock_minimo}</td>
                         <td>
@@ -558,12 +555,12 @@ window.ERPFarmacias = {
     setupSearch,
     openModal,
     closeModal,
-    cargarEstadisticasDashboard,
+    cargarEstadisticasHome,
     actualizarContador,
     manejarClickActividad
 };
 
 // También hacer disponibles las funciones principales globalmente
-window.cargarEstadisticasDashboard = cargarEstadisticasDashboard;
+window.cargarEstadisticasHome = cargarEstadisticasHome;
 window.actualizarContador = actualizarContador;
 window.manejarClickActividad = manejarClickActividad;

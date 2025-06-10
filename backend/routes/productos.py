@@ -419,7 +419,7 @@ def api_productos_stock_bajo():
 def api_estadisticas_productos():
     """
     @brief API para obtener estadísticas de productos
-    @details Proporciona contadores y métricas para el dashboard
+    @details Proporciona contadores y métricas para el home
     @return JSON con estadísticas de productos
     @version 1.0
     """

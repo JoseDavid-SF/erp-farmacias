@@ -3,7 +3,7 @@
 {% block title %}Productos - ERP Farmacias{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
 <li class="breadcrumb-item active">Productos</li>
 {% endblock %}
 
@@ -104,7 +104,7 @@
                 <div class="row">
                     {% for producto in productos.items %}
                     <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card h-100 producto-card">
+                        <div class="card h-100 producto-card d-flex flex-column">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span class="badge bg-primary">{{ producto.codigo }}</span>
                                 {% if producto.categoria %}
@@ -112,7 +112,7 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="card-body">
+                            <div class="card-body d-flex flex-column">
                                 <!-- Imagen del producto -->
                                 <div class="text-center mb-3">
                                     {% if producto.imagen_url %}
@@ -176,8 +176,8 @@
                                 </div>
                                 {% endif %}
                                 
-                                <!-- Información adicional -->
-                                <div class="mb-3">
+                                <!-- Información adicional que se adapta al espacio disponible -->
+                                <div class="mb-3 flex-grow-1">
                                     {% if producto.lote %}
                                     <small class="text-muted d-block">
                                         <i class="fas fa-tag me-1"></i>Lote: {{ producto.lote }}
@@ -191,29 +191,31 @@
                                     {% endif %}
                                 </div>
                                 
-                                <!-- Botones de acción directos -->
-                                <div class="d-grid gap-1">
-                                    <button type="button" 
-                                            class="btn btn-outline-info btn-sm btn-ver-detalle-producto"
-                                            data-producto-id="{{ producto.id }}"
-                                            data-bs-toggle="tooltip" 
-                                            title="Ver detalles completos">
-                                        <i class="fas fa-eye me-1"></i>Ver Detalles
-                                    </button>
-                                    <a href="{{ url_for('productos.editar_producto', id=producto.id) }}" 
-                                       class="btn btn-outline-warning btn-sm"
-                                       data-bs-toggle="tooltip" 
-                                       title="Editar producto">
-                                        <i class="fas fa-edit me-1"></i>Editar
-                                    </a>
-                                    <button type="button" 
-                                            class="btn btn-outline-danger btn-sm btn-eliminar-producto"
-                                            data-producto-id="{{ producto.id }}"
-                                            data-producto-nombre="{{ producto.nombre }}"
-                                            data-bs-toggle="tooltip" 
-                                            title="Desactivar producto">
-                                        <i class="fas fa-trash me-1"></i>Eliminar
-                                    </button>
+                                <!-- Botones de acción fijos en la parte inferior -->
+                                <div class="mt-auto">
+                                    <div class="d-grid gap-1">
+                                        <button type="button" 
+                                                class="btn btn-outline-info btn-sm btn-ver-detalle-producto"
+                                                data-producto-id="{{ producto.id }}"
+                                                data-bs-toggle="tooltip" 
+                                                title="Ver detalles completos">
+                                            <i class="fas fa-eye me-1"></i>Ver Detalles
+                                        </button>
+                                        <a href="{{ url_for('productos.editar_producto', id=producto.id) }}" 
+                                           class="btn btn-outline-warning btn-sm"
+                                           data-bs-toggle="tooltip" 
+                                           title="Editar producto">
+                                            <i class="fas fa-edit me-1"></i>Editar
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger btn-sm btn-eliminar-producto"
+                                                data-producto-id="{{ producto.id }}"
+                                                data-producto-nombre="{{ producto.nombre }}"
+                                                data-bs-toggle="tooltip" 
+                                                title="Desactivar producto">
+                                            <i class="fas fa-trash me-1"></i>Eliminar
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

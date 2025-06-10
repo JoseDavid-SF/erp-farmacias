@@ -20,7 +20,7 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}">
                 <i class="fas fa-pills me-2"></i>
-                ERP Farmacias
+                Mega Nevada
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -29,11 +29,6 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
-                        </a>
-                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="clientesDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-users me-1"></i>Clientes
@@ -92,20 +87,24 @@
     <!-- Contenido Principal -->
     <main class="main-content">
         <div class="container-fluid py-4">
-            <!-- Breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-4">
+            <!-- Contenido específico de cada página -->
+            {% block content %}{% endblock %}
+
+            <!-- Breadcrumb (solo en páginas que no sean home) -->
+            {% block breadcrumb_section %}
+            {% if request.endpoint != 'index' %}
+            <nav aria-label="breadcrumb" class="mt-4">
                 <ol class="breadcrumb">
                     {% block breadcrumb %}
-                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
                     {% endblock %}
                 </ol>
             </nav>
+            {% endif %}
+            {% endblock %}
 
             <!-- Alertas -->
             <div id="alerts-container"></div>
-
-            <!-- Contenido específico de cada página -->
-            {% block content %}{% endblock %}
         </div>
     </main>
 

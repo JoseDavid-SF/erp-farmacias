@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
 <li class="breadcrumb-item"><a href="{{ url_for('productos.lista_productos') }}">Productos</a></li>
 <li class="breadcrumb-item active">
     {% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}
@@ -325,8 +325,6 @@
     </div>
 </div>
 {% endblock %}
-
-
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/productos.js') }}"></script>

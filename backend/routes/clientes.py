@@ -312,7 +312,7 @@ def api_detalle_cliente(id):
 def api_estadisticas_clientes():
     """
     @brief API para obtener estadísticas de clientes
-    @details Proporciona contadores y métricas para el dashboard
+    @details Proporciona contadores y métricas para el home
     @return JSON con estadísticas de clientes
     @version 1.0
     """

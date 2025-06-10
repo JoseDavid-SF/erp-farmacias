@@ -2,7 +2,7 @@
  * @file style.css
  * @brief Estilos principales del ERP de proveedor autónomo de farmacias
  * @author José David Sánchez Fernández
- * @version 6.2
+ * @version 6.3
  * @date 2025-06-09
  */
 
@@ -63,9 +63,31 @@ body {
     background-color: #fff;
     border-bottom: 1px solid #e9ecef;
     font-weight: 600;
+    color: var(--dark-color);
 }
 
-/* Tarjetas clicables del dashboard */
+/* Sobrescribir títulos en headers para que aparezcan en negro con mayor peso y tamaño */
+.card-header .text-primary,
+.card-header h6.text-primary {
+    color: var(--dark-color) !important;
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+/* Sobrescribir títulos de alertas para que tengan el mismo peso y tamaño */
+.card-header .text-danger,
+.card-header h6.text-danger {
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+/* Hacer que el icono junto al título de alertas también sea rojo */
+.card-header .text-danger + i,
+.card-header h6.text-danger + i {
+    color: var(--danger-color) !important;
+}
+
+/* Tarjetas clicables del home */
 .card-clickable {
     cursor: pointer;
 }
@@ -99,6 +121,23 @@ body {
 
 .btn-lg {
     padding: 0.75rem 1.5rem;
+}
+
+/* Forzar texto blanco en botones de colores claros */
+.btn-warning {
+    color: white !important;
+}
+
+.btn-warning:hover {
+    color: white !important;
+}
+
+.btn-info {
+    color: white !important;
+}
+
+.btn-info:hover {
+    color: white !important;
 }
 
 /* Formularios */
@@ -157,6 +196,12 @@ body {
 
 .activity-item:last-child {
     border-bottom: none;
+}
+
+/* Texto de actividad en gris con peso normal para que resalte menos */
+.activity-item .fw-bold {
+    color: #6c757d !important;
+    font-weight: 500;
 }
 
 /* Elementos clicables en actividad reciente */
@@ -233,6 +278,19 @@ body {
     box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.15);
 }
 
+/* Arreglo para las tarjetas de productos con altura uniforme */
+.producto-card.d-flex.flex-column {
+    height: 100%;
+}
+
+.producto-card .card-body.d-flex.flex-column {
+    height: 100%;
+}
+
+.producto-card .mt-auto {
+    margin-top: auto !important;
+}
+
 .producto-imagen {
     border-radius: 0.5rem;
     transition: transform 0.3s ease;
@@ -259,12 +317,6 @@ body {
     transition: transform 0.2s ease, color 0.2s ease;
 }
 
-/* Estilos para notificaciones de actividad */
-.text-info.d-block {
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
-}
-
 /* Mejoras en responsividad para actividad reciente */
 @media (max-width: 768px) {
     .activity-item.cursor-pointer:hover {
@@ -274,11 +326,6 @@ body {
     .activity-item .d-flex {
         flex-direction: column;
         align-items: flex-start !important;
-    }
-    
-    .activity-item .text-primary {
-        margin-top: 0.5rem;
-        align-self: flex-end;
     }
 }
 

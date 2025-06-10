@@ -66,8 +66,8 @@ def create_app(config_name=None):
     def index():
         """
         @brief Página principal del ERP
-        @details Renderiza el dashboard principal con las estadísticas del sistema
-        @return Template HTML del dashboard
+        @details Renderiza el home principal con las estadísticas del sistema
+        @return Template HTML del home
         @version 4.0
         """
         return render_template('index.html')
@@ -111,10 +111,10 @@ def create_app(config_name=None):
             "database": "PostgreSQL"
         })
     
-    @app.route('/api/dashboard/estadisticas')
-    def api_dashboard_estadisticas():
+    @app.route('/api/home/estadisticas')
+    def api_home_estadisticas():
         """
-        @brief API para obtener todas las estadísticas del dashboard
+        @brief API para obtener todas las estadísticas del home
         @details Proporciona contadores de clientes, productos, pedidos y facturas
         @return JSON con estadísticas completas del sistema
         @version 1.0
@@ -169,10 +169,10 @@ def create_app(config_name=None):
                 }
             }), 500
     
-    @app.route('/api/dashboard/actividad')
-    def api_dashboard_actividad():
+    @app.route('/api/home/actividad')
+    def api_home_actividad():
         """
-        @brief API para obtener actividad reciente del dashboard con enlaces
+        @brief API para obtener actividad reciente del home con enlaces
         @return JSON con actividad reciente del sistema incluyendo enlaces
         @version 2.0
         """
@@ -190,7 +190,7 @@ def create_app(config_name=None):
                     'mensaje': f'Nuevo cliente: {cliente.nombre}',
                     'fecha': cliente.fecha_creacion.isoformat(),
                     'icono': 'fa-user-plus',
-                    'color': 'success',
+                    'color': 'primary',
                     'enlace': f'/clientes',
                     'elemento_id': cliente.id,
                     'elemento_tipo': 'cliente'
@@ -205,7 +205,7 @@ def create_app(config_name=None):
                         'mensaje': f'Nuevo producto: {producto.nombre}',
                         'fecha': producto.fecha_creacion.isoformat(),
                         'icono': 'fa-box',
-                        'color': 'info',
+                        'color': 'success',
                         'enlace': f'/productos',
                         'elemento_id': producto.id,
                         'elemento_tipo': 'producto'
@@ -226,7 +226,7 @@ def create_app(config_name=None):
                         'mensaje': f'Stock bajo: {producto.nombre} ({producto.stock} unidades)',
                         'fecha': datetime.now().isoformat(),
                         'icono': 'fa-exclamation-triangle',
-                        'color': 'warning',
+                        'color': 'danger',
                         'enlace': f'/productos',
                         'elemento_id': producto.id,
                         'elemento_tipo': 'producto'
@@ -274,8 +274,8 @@ def create_app(config_name=None):
                 'actividades': []
             })
     
-    @app.route('/api/dashboard/stock-bajo')
-    def api_dashboard_stock_bajo():
+    @app.route('/api/home/stock-bajo')
+    def api_home_stock_bajo():
         """
         @brief API para obtener productos con stock bajo
         @return JSON con productos que requieren reabastecimiento
@@ -331,7 +331,7 @@ if __name__ == '__main__':
     app = create_app()
     
     print("🚀 Iniciando ERP Proveedor Autónomo de Farmacias...")
-    print("📊 Dashboard disponible en: http://localhost:5000")
+    print("📊 Home disponible en: http://localhost:5000")
     print("🔧 API disponible en: http://localhost:5000/api/test")
     print("📋 Estado del sistema: http://localhost:5000/api/status")
     
