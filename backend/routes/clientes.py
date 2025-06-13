@@ -7,8 +7,8 @@
 @details Este módulo contiene todas las rutas relacionadas con la gestión
          de clientes: crear, listar, editar, eliminar y buscar.
 @author José David Sánchez Fernández
-@version 1.1
-@date 2025-06-09
+@version 1.2
+@date 2025-06-10
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -16,6 +16,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from models.models import db, Cliente
 from datetime import datetime
 import re
+from decimal import Decimal
 
 # Crear blueprint para clientes
 clientes_bp = Blueprint('clientes', __name__, url_prefix='/clientes')
@@ -41,7 +42,10 @@ def lista_clientes():
             query = query.filter(
                 (Cliente.nombre.ilike(search_filter)) |
                 (Cliente.codigo.ilike(search_filter)) |
-                (Cliente.telefono.ilike(search_filter))
+                (Cliente.telefono.ilike(search_filter)) |
+                (Cliente.nombre_fiscal.ilike(search_filter)) |
+                (Cliente.cif.ilike(search_filter)) |
+                (Cliente.contacto.ilike(search_filter))
             )
         
         # Paginación
@@ -84,7 +88,7 @@ def api_crear_cliente():
     @brief API para crear un nuevo cliente
     @details Procesa los datos del formulario y crea un cliente en la base de datos
     @return JSON con resultado de la operación
-    @version 1.1
+    @version 1.2
     """
     try:
         data = request.get_json()
@@ -114,6 +118,22 @@ def api_crear_cliente():
                 'message': 'El formato del email no es válido'
             }), 400
         
+        # Validar recargo de equivalencia
+        recargo_equivalencia = Decimal('0')
+        if data.get('recargo_equivalencia'):
+            try:
+                recargo_equivalencia = Decimal(str(data['recargo_equivalencia']))
+                if recargo_equivalencia not in [Decimal('0'), Decimal('0.5'), Decimal('1.4'), Decimal('5.2')]:
+                    return jsonify({
+                        'success': False,
+                        'message': 'El recargo de equivalencia debe ser 0%, 0.5%, 1.4% o 5.2%'
+                    }), 400
+            except (ValueError, TypeError):
+                return jsonify({
+                    'success': False,
+                    'message': 'El recargo de equivalencia debe ser un número válido'
+                }), 400
+        
         # Crear nuevo cliente
         cliente = Cliente(
             codigo=data['codigo'].strip().upper(),
@@ -121,7 +141,13 @@ def api_crear_cliente():
             direccion=data.get('direccion', '').strip(),
             telefono=data.get('telefono', '').strip(),
             email=data.get('email', '').strip().lower(),
-            notas=data.get('notas', '').strip()
+            notas=data.get('notas', '').strip(),
+            # Nuevos campos fiscales
+            nombre_fiscal=data.get('nombre_fiscal', '').strip(),
+            cif=data.get('cif', '').strip().upper(),
+            contacto=data.get('contacto', '').strip(),
+            cuenta_bancaria=data.get('cuenta_bancaria', '').strip(),
+            recargo_equivalencia=recargo_equivalencia
         )
         
         print(f"✅ Cliente creado en memoria: {cliente}")  # Debug log
@@ -152,7 +178,7 @@ def api_actualizar_cliente(id):
     @brief API para actualizar un cliente existente
     @param id ID del cliente a actualizar
     @return JSON con resultado de la operación
-    @version 1.0
+    @version 1.1
     """
     try:
         cliente = Cliente.query.get_or_404(id)
@@ -184,7 +210,23 @@ def api_actualizar_cliente(id):
                 'message': 'El formato del email no es válido'
             }), 400
         
-        # Actualizar datos
+        # Validar recargo de equivalencia
+        recargo_equivalencia = Decimal('0')
+        if data.get('recargo_equivalencia'):
+            try:
+                recargo_equivalencia = Decimal(str(data['recargo_equivalencia']))
+                if recargo_equivalencia not in [Decimal('0'), Decimal('0.5'), Decimal('1.4'), Decimal('5.2')]:
+                    return jsonify({
+                        'success': False,
+                        'message': 'El recargo de equivalencia debe ser 0%, 0.5%, 1.4% o 5.2%'
+                    }), 400
+            except (ValueError, TypeError):
+                return jsonify({
+                    'success': False,
+                    'message': 'El recargo de equivalencia debe ser un número válido'
+                }), 400
+        
+        # Actualizar datos básicos
         cliente.codigo = data['codigo'].strip().upper()
         cliente.nombre = data['nombre'].strip()
         cliente.direccion = data.get('direccion', '').strip()
@@ -192,6 +234,13 @@ def api_actualizar_cliente(id):
         cliente.email = data.get('email', '').strip().lower()
         cliente.notas = data.get('notas', '').strip()
         cliente.activo = data.get('activo', True)
+        
+        # Actualizar nuevos campos fiscales
+        cliente.nombre_fiscal = data.get('nombre_fiscal', '').strip()
+        cliente.cif = data.get('cif', '').strip().upper()
+        cliente.contacto = data.get('contacto', '').strip()
+        cliente.cuenta_bancaria = data.get('cuenta_bancaria', '').strip()
+        cliente.recargo_equivalencia = recargo_equivalencia
         
         db.session.commit()
         
@@ -241,7 +290,7 @@ def api_buscar_clientes():
     @brief API para buscar clientes
     @details Busca clientes por código, nombre o teléfono
     @return JSON con lista de clientes encontrados
-    @version 1.0
+    @version 1.1
     """
     try:
         termino = request.args.get('q', '').strip()
@@ -255,7 +304,10 @@ def api_buscar_clientes():
             Cliente.activo == True,
             (Cliente.nombre.ilike(search_filter)) |
             (Cliente.codigo.ilike(search_filter)) |
-            (Cliente.telefono.ilike(search_filter))
+            (Cliente.telefono.ilike(search_filter)) |
+            (Cliente.nombre_fiscal.ilike(search_filter)) |
+            (Cliente.cif.ilike(search_filter)) |
+            (Cliente.contacto.ilike(search_filter))
         ).limit(limite).all()
         
         return jsonify({
@@ -270,10 +322,10 @@ def api_buscar_clientes():
 @clientes_bp.route('/api/detalle/<int:id>')
 def api_detalle_cliente(id):
     """
-    @brief API para obtener detalles de un cliente incluyendo notas
+    @brief API para obtener detalles de un cliente incluyendo todos los campos
     @param id ID del cliente
     @return JSON con datos completos del cliente
-    @version 1.1
+    @version 1.2
     """
     try:
         cliente = Cliente.query.get_or_404(id)
@@ -281,22 +333,8 @@ def api_detalle_cliente(id):
         # Obtener estadísticas del cliente
         total_pedidos = len(cliente.pedidos) if hasattr(cliente, 'pedidos') else 0
         
-        # Crear diccionario completo del cliente incluyendo notas
-        cliente_data = {
-            'id': cliente.id,
-            'codigo': cliente.codigo,
-            'nombre': cliente.nombre,
-            'direccion': cliente.direccion,
-            'telefono': cliente.telefono,
-            'email': cliente.email,
-            'notas': cliente.notas,  # Incluir las notas
-            'activo': cliente.activo,
-            'fecha_creacion': cliente.fecha_creacion.isoformat() if cliente.fecha_creacion else None,
-            'fecha_ultima_visita': cliente.fecha_ultima_visita.isoformat() if cliente.fecha_ultima_visita else None
-        }
-        
         return jsonify({
-            'cliente': cliente_data,
+            'cliente': cliente.to_dict(),
             'estadisticas': {
                 'total_pedidos': total_pedidos,
                 'fecha_ultimo_pedido': cliente.fecha_ultima_visita.isoformat() if cliente.fecha_ultima_visita else None

@@ -4,8 +4,8 @@
  * @details Funciones para manejar las operaciones CRUD de productos,
  *          búsquedas, validaciones y control de stock.
  * @author José David Sánchez Fernández
- * @version 1.4
- * @date 2025-06-09
+ * @version 1.5
+ * @date 2025-06-10
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
 
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /**
  * @brief Inicializa todas las funcionalidades del módulo de productos
- * @version 1.3
+ * @version 1.4
  */
 function inicializarProductos() {
     // Detectar si estamos en la página de lista o formulario
@@ -131,7 +131,7 @@ function configurarBusquedaProductos() {
 /**
  * @brief Muestra los detalles de un producto en un modal
  * @param productoId ID del producto a mostrar
- * @version 1.1
+ * @version 1.2
  */
 async function verDetalleProducto(productoId) {
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleProducto'));
@@ -182,6 +182,95 @@ async function verDetalleProducto(productoId) {
 }
 
 /**
+ * @brief Extrae datos del producto desde el DOM de la tarjeta incluyendo nuevos campos
+ * @param card Elemento de la tarjeta del producto
+ * @param productoId ID del producto
+ * @return Object con datos del producto
+ * @version 1.1
+ */
+function extraerDatosProductoDelDOM(card, productoId) {
+    if (!card) return null;
+    
+    // Extraer información de proveedor y marca desde los elementos small
+    let marca = '';
+    let nombreProveedor = '';
+    let codigoNacional = '';
+    let numReferencia = '';
+    
+    const smallElements = card.querySelectorAll('small.text-muted');
+    for (let small of smallElements) {
+        const texto = small.textContent;
+        if (texto.includes('🏷️') || texto.includes('fa-tag')) {
+            if (texto.includes('CN:')) {
+                codigoNacional = texto.replace(/.*CN:\s*/, '').trim();
+            } else if (texto.includes('Ref:')) {
+                numReferencia = texto.replace(/.*Ref:\s*/, '').trim();
+            } else {
+                marca = texto.replace(/.*🏷️\s*/, '').trim();
+            }
+        } else if (texto.includes('🚛') || texto.includes('fa-truck')) {
+            nombreProveedor = texto.replace(/.*🚛\s*/, '').trim();
+        }
+    }
+    
+    return {
+        id: productoId,
+        codigo: card.querySelector('.badge.bg-primary')?.textContent || '',
+        nombre: card.querySelector('.card-title')?.textContent || '',
+        descripcion: card.querySelector('.card-text.text-muted')?.textContent || '',
+        precio: parseFloat(card.querySelector('.text-success')?.textContent?.replace('€', '')) || 0,
+        categoria: card.querySelector('.badge.bg-secondary')?.textContent || '',
+        stock: parseInt(card.querySelector('.fw-bold')?.textContent) || 0,
+        stock_minimo: parseInt(card.querySelectorAll('.fw-bold')[1]?.textContent) || 0,
+        lote: extraerLoteDelDOM(card),
+        fecha_caducidad: extraerFechaCaducidadDelDOM(card),
+        imagen_url: card.querySelector('img')?.src || null,
+        iva_porcentaje: extraerIVADelDOM(card),
+        // Nuevos campos
+        codigo_nacional: codigoNacional,
+        num_referencia: numReferencia,
+        nombre_proveedor: nombreProveedor,
+        marca: marca
+    };
+}
+
+/**
+ * @brief Extrae el IVA desde el DOM de la tarjeta
+ * @param card Elemento de la tarjeta del producto
+ * @return Number con el porcentaje de IVA o 21 por defecto
+ * @version 1.0
+ */
+function extraerIVADelDOM(card) {
+    if (!card) return 21;
+    
+    const ivaBadge = card.querySelector('.badge.bg-info');
+    if (ivaBadge && ivaBadge.textContent.includes('IVA')) {
+        const ivaText = ivaBadge.textContent.replace('IVA', '').replace('%', '').trim();
+        return parseFloat(ivaText) || 21;
+    }
+    return 21;
+}
+
+/**
+ * @brief Extrae el lote desde el DOM de la tarjeta
+ * @param card Elemento de la tarjeta del producto
+ * @return String con el lote o cadena vacía
+ * @version 1.0
+ */
+function extraerLoteDelDOM(card) {
+    if (!card) return '';
+    
+    const smallElements = card.querySelectorAll('small.text-muted');
+    for (let small of smallElements) {
+        const texto = small.textContent;
+        if (texto.includes('Lote:')) {
+            return texto.replace('Lote:', '').trim();
+        }
+    }
+    return '';
+}
+
+/**
  * @brief Extrae la fecha de caducidad desde el DOM de la tarjeta
  * @param card Elemento de la tarjeta del producto
  * @return String con la fecha de caducidad formateada o null
@@ -202,34 +291,9 @@ function extraerFechaCaducidadDelDOM(card) {
 }
 
 /**
- * @brief Extrae datos del producto desde el DOM de la tarjeta
- * @param card Elemento de la tarjeta del producto
- * @param productoId ID del producto
- * @return Object con datos del producto
- * @version 1.0
- */
-function extraerDatosProductoDelDOM(card, productoId) {
-    if (!card) return null;
-    
-    return {
-        id: productoId,
-        codigo: card.querySelector('.badge.bg-primary')?.textContent || '',
-        nombre: card.querySelector('.card-title')?.textContent || '',
-        descripcion: card.querySelector('.card-text.text-muted')?.textContent || '',
-        precio: card.querySelector('.text-success')?.textContent?.replace('€', '') || '0',
-        categoria: card.querySelector('.badge.bg-secondary')?.textContent || '',
-        stock: card.querySelector('.fw-bold')?.textContent || '0',
-        stock_minimo: card.querySelectorAll('.fw-bold')[1]?.textContent || '0',
-        lote: card.querySelector('small')?.textContent?.replace('Lote: ', '') || '',
-        fecha_caducidad: null,
-        imagen_url: card.querySelector('img')?.src || null
-    };
-}
-
-/**
- * @brief Muestra los detalles del producto en el modal
+ * @brief Muestra los detalles del producto en el modal incluyendo nuevos campos
  * @param producto Datos del producto obtenidos de la API o DOM
- * @version 1.1
+ * @version 1.2
  */
 function mostrarDetalleProducto(producto) {
     const contenido = document.getElementById('detalleProductoContent');
@@ -239,6 +303,13 @@ function mostrarDetalleProducto(producto) {
     const stock = parseInt(producto.stock) || 0;
     const stockMinimo = parseInt(producto.stock_minimo) || 0;
     const valorStock = (precio * stock).toFixed(2);
+    const ivaPorc = parseFloat(producto.iva_porcentaje) || 21;
+    
+    // Calcular recargo de equivalencia
+    let recargoEquiv = 0;
+    if (ivaPorc === 4) recargoEquiv = 0.5;
+    else if (ivaPorc === 10) recargoEquiv = 1.4;
+    else if (ivaPorc === 21) recargoEquiv = 5.2;
     
     // Determinar estado del stock
     let estadoStock = 'text-success';
@@ -276,10 +347,34 @@ function mostrarDetalleProducto(producto) {
                       `<br><span class="badge bg-secondary mt-1">${producto.categoria}</span>` : 
                       ''
                     }
+                    <br><span class="badge bg-info mt-1">IVA ${ivaPorc}%</span>
                 </div>
             </div>
             <div class="col-md-8">
                 <h4 class="text-primary mb-3">${producto.nombre}</h4>
+                
+                ${(producto.marca || producto.nombre_proveedor) ? 
+                  `<div class="mb-3">
+                     <h6 class="text-secondary">Información del Proveedor</h6>
+                     ${producto.marca ? 
+                       `<p class="mb-1"><i class="fas fa-tag me-2 text-muted"></i><strong>Marca:</strong> ${producto.marca}</p>` : 
+                       ''
+                     }
+                     ${producto.nombre_proveedor ? 
+                       `<p class="mb-1"><i class="fas fa-truck me-2 text-muted"></i><strong>Proveedor:</strong> ${producto.nombre_proveedor}</p>` : 
+                       ''
+                     }
+                     ${producto.codigo_nacional ? 
+                       `<p class="mb-1"><i class="fas fa-barcode me-2 text-muted"></i><strong>Código Nacional:</strong> ${producto.codigo_nacional}</p>` : 
+                       ''
+                     }
+                     ${producto.num_referencia ? 
+                       `<p class="mb-1"><i class="fas fa-hashtag me-2 text-muted"></i><strong>Referencia:</strong> ${producto.num_referencia}</p>` : 
+                       ''
+                     }
+                   </div>` : 
+                  ''
+                }
                 
                 ${producto.descripcion ? 
                   `<div class="mb-3">
@@ -291,8 +386,9 @@ function mostrarDetalleProducto(producto) {
                 
                 <div class="row mb-3">
                     <div class="col-6">
-                        <h6 class="text-secondary">Precio</h6>
+                        <h6 class="text-secondary">Precio (sin IVA)</h6>
                         <h4 class="text-success">${precio.toFixed(2)}€</h4>
+                        <small class="text-muted">IVA ${ivaPorc}% | Rec. Equiv. ${recargoEquiv}%</small>
                     </div>
                     <div class="col-6">
                         <h6 class="text-secondary">Estado</h6>
@@ -415,7 +511,7 @@ function agregarAPedido(productoId) {
 
 /**
  * @brief Configura las validaciones del formulario de producto
- * @version 1.1
+ * @version 1.2
  */
 function configurarFormularioProducto() {
     const form = document.getElementById('formProducto');
@@ -455,7 +551,7 @@ function configurarFormularioProducto() {
         }
     });
     
-    // Validación en tiempo real
+    // Validación en tiempo real para campos básicos
     const campos = ['codigo', 'nombre', 'precio', 'stock', 'stock_minimo'];
     campos.forEach(campo => {
         const input = document.getElementById(campo);
@@ -464,12 +560,22 @@ function configurarFormularioProducto() {
             input.addEventListener('input', () => limpiarErrorProducto(campo));
         }
     });
+    
+    // Validación en tiempo real para nuevos campos
+    const camposNuevos = ['codigo_nacional', 'num_referencia', 'nombre_proveedor', 'marca'];
+    camposNuevos.forEach(campo => {
+        const input = document.getElementById(campo);
+        if (input) {
+            input.addEventListener('blur', () => validarCampoNuevoProducto(campo));
+            input.addEventListener('input', () => limpiarErrorProducto(campo));
+        }
+    });
 }
 
 /**
  * @brief Valida todo el formulario de producto
  * @return bool True si es válido, false en caso contrario
- * @version 1.0
+ * @version 1.1
  */
 function validarFormularioProducto() {
     let esValido = true;
@@ -482,6 +588,10 @@ function validarFormularioProducto() {
     // Validar campos numéricos
     if (!validarCampoProducto('stock')) esValido = false;
     if (!validarCampoProducto('stock_minimo')) esValido = false;
+    
+    // Validar nuevos campos opcionales
+    const codigoNacional = document.getElementById('codigo_nacional').value;
+    if (codigoNacional && !validarCampoNuevoProducto('codigo_nacional')) esValido = false;
     
     return esValido;
 }
@@ -550,6 +660,52 @@ function validarCampoProducto(campo) {
 }
 
 /**
+ * @brief Valida los nuevos campos del formulario de producto
+ * @param campo Nombre del campo a validar
+ * @return bool True si es válido, false en caso contrario
+ * @version 1.0
+ */
+function validarCampoNuevoProducto(campo) {
+    const input = document.getElementById(campo);
+    if (!input) return true;
+    
+    const valor = input.value.trim();
+    
+    switch(campo) {
+        case 'codigo_nacional':
+            if (valor && (valor.length < 3 || valor.length > 20)) {
+                mostrarErrorCampoProducto(campo, 'El código nacional debe tener entre 3 y 20 caracteres');
+                return false;
+            }
+            break;
+            
+        case 'num_referencia':
+            if (valor && valor.length < 2) {
+                mostrarErrorCampoProducto(campo, 'La referencia debe tener al menos 2 caracteres');
+                return false;
+            }
+            break;
+            
+        case 'nombre_proveedor':
+            if (valor && valor.length < 2) {
+                mostrarErrorCampoProducto(campo, 'El nombre del proveedor debe tener al menos 2 caracteres');
+                return false;
+            }
+            break;
+            
+        case 'marca':
+            if (valor && valor.length < 2) {
+                mostrarErrorCampoProducto(campo, 'La marca debe tener al menos 2 caracteres');
+                return false;
+            }
+            break;
+    }
+    
+    limpiarErrorProducto(campo);
+    return true;
+}
+
+/**
  * @brief Muestra un error en un campo específico
  * @param campo Nombre del campo
  * @param mensaje Mensaje de error a mostrar
@@ -583,7 +739,7 @@ function limpiarErrorProducto(campo) {
 
 /**
  * @brief Guarda los datos del producto (crear o actualizar)
- * @version 1.0
+ * @version 1.1
  */
 async function guardarProducto() {
     const form = document.getElementById('formProducto');
@@ -606,6 +762,12 @@ async function guardarProducto() {
         
         // Manejar checkbox de activo
         data.activo = form.querySelector('#activo') ? form.querySelector('#activo').checked : true;
+        
+        // Validar y convertir IVA
+        const ivaSelect = form.querySelector('#iva_porcentaje');
+        if (ivaSelect && ivaSelect.value) {
+            data.iva_porcentaje = parseFloat(ivaSelect.value);
+        }
         
         console.log('📤 Datos de producto a enviar:', data);
         

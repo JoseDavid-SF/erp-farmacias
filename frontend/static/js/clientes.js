@@ -4,8 +4,8 @@
  * @details Funciones para manejar las operaciones CRUD de clientes,
  *          búsquedas, validaciones y modales.
  * @author José David Sánchez Fernández
- * @version 1.3
- * @date 2025-06-09
+ * @version 1.4
+ * @date 2025-06-10
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
 
@@ -108,7 +108,7 @@ function configurarBusqueda() {
 /**
  * @brief Muestra los detalles de un cliente en un modal
  * @param clienteId ID del cliente a mostrar
- * @version 1.1
+ * @version 1.2
  */
 async function verDetalleCliente(clienteId) {
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleCliente'));
@@ -145,9 +145,9 @@ async function verDetalleCliente(clienteId) {
 }
 
 /**
- * @brief Muestra los detalles del cliente en el modal incluyendo las notas
+ * @brief Muestra los detalles del cliente en el modal incluyendo nuevos campos
  * @param data Datos del cliente obtenidos de la API
- * @version 1.1
+ * @version 1.2
  */
 function mostrarDetalleCliente(data) {
     const cliente = data.cliente;
@@ -170,6 +170,12 @@ function mostrarDetalleCliente(data) {
                         <td class="fw-semibold">Nombre:</td>
                         <td>${cliente.nombre}</td>
                     </tr>
+                    ${cliente.nombre_fiscal && cliente.nombre_fiscal !== cliente.nombre ? `
+                    <tr>
+                        <td class="fw-semibold">Nombre Fiscal:</td>
+                        <td>${cliente.nombre_fiscal}</td>
+                    </tr>
+                    ` : ''}
                     <tr>
                         <td class="fw-semibold">Dirección:</td>
                         <td>${cliente.direccion || '<em class="text-muted">No especificada</em>'}</td>
@@ -209,6 +215,37 @@ function mostrarDetalleCliente(data) {
             </div>
             <div class="col-md-6">
                 <h6 class="text-primary mb-3">
+                    <i class="fas fa-file-invoice me-2"></i>
+                    Información Fiscal
+                </h6>
+                <table class="table table-sm">
+                    <tr>
+                        <td class="fw-semibold">CIF/NIF:</td>
+                        <td>${cliente.cif || '<em class="text-muted">No especificado</em>'}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Farmacéutico:</td>
+                        <td>${cliente.contacto || '<em class="text-muted">No especificado</em>'}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Cuenta Bancaria:</td>
+                        <td>${cliente.cuenta_bancaria ? 
+                            `<code class="small">${cliente.cuenta_bancaria}</code>` : 
+                            '<em class="text-muted">No especificada</em>'
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Recargo Equiv.:</td>
+                        <td>
+                            ${cliente.recargo_equivalencia > 0 ? 
+                              `<span class="badge bg-info">${cliente.recargo_equivalencia}%</span>` : 
+                              '<span class="badge bg-secondary">Sin recargo</span>'
+                            }
+                        </td>
+                    </tr>
+                </table>
+                
+                <h6 class="text-primary mb-3 mt-4">
                     <i class="fas fa-chart-bar me-2"></i>
                     Estadísticas
                 </h6>
@@ -310,7 +347,7 @@ async function eliminarCliente(clienteId, nombreCliente) {
 
 /**
  * @brief Configura las validaciones del formulario de cliente
- * @version 1.1
+ * @version 1.2
  */
 function configurarFormularioCliente() {
     const form = document.getElementById('formCliente');
@@ -333,7 +370,7 @@ function configurarFormularioCliente() {
         }
     });
     
-    // Validación en tiempo real
+    // Validación en tiempo real para campos básicos
     const campos = ['codigo', 'nombre', 'email', 'telefono'];
     campos.forEach(campo => {
         const input = document.getElementById(campo);
@@ -342,27 +379,67 @@ function configurarFormularioCliente() {
             input.addEventListener('input', () => limpiarError(campo));
         }
     });
+    
+    // Validación en tiempo real para nuevos campos
+    const camposNuevos = ['cif', 'nombre_fiscal', 'contacto', 'cuenta_bancaria'];
+    camposNuevos.forEach(campo => {
+        const input = document.getElementById(campo);
+        if (input) {
+            input.addEventListener('blur', () => validarCampoNuevo(campo));
+            input.addEventListener('input', () => limpiarError(campo));
+        }
+    });
 }
 
 /**
  * @brief Valida todo el formulario de cliente
  * @return bool True si es válido, false en caso contrario
- * @version 1.0
+ * @version 1.2
  */
 function validarFormularioCliente() {
     let esValido = true;
     
+    console.log('🔍 Iniciando validación del formulario de cliente...');
+    
     // Validar campos requeridos
-    if (!validarCampo('codigo')) esValido = false;
-    if (!validarCampo('nombre')) esValido = false;
+    if (!validarCampo('codigo')) {
+        console.log('❌ Error en código');
+        esValido = false;
+    }
+    if (!validarCampo('nombre')) {
+        console.log('❌ Error en nombre');
+        esValido = false;
+    }
     
     // Validar campos opcionales con formato
     const email = document.getElementById('email').value;
-    if (email && !validarCampo('email')) esValido = false;
+    if (email && !validarCampo('email')) {
+        console.log('❌ Error en email');
+        esValido = false;
+    }
     
     const telefono = document.getElementById('telefono').value;
-    if (telefono && !validarCampo('telefono')) esValido = false;
+    if (telefono && !validarCampo('telefono')) {
+        console.log('❌ Error en teléfono');
+        esValido = false;
+    }
     
+    // Validar nuevos campos opcionales
+    const cif = document.getElementById('cif').value;
+    console.log('🔍 Validando CIF:', cif);
+    if (cif && !validarCampoNuevo('cif')) {
+        console.log('❌ Error en CIF');
+        esValido = false;
+    }
+    
+    const cuentaBancaria = document.getElementById('cuenta_bancaria').value;
+    console.log('🔍 Validando cuenta bancaria:', cuentaBancaria);
+    if (cuentaBancaria && !validarCampoNuevo('cuenta_bancaria')) {
+        console.log('❌ Error en cuenta bancaria');
+        esValido = false;
+    }
+    
+    console.log('✅ Validación completada. Resultado:', esValido);
     return esValido;
 }
 
@@ -421,6 +498,58 @@ function validarCampo(campo) {
 }
 
 /**
+ * @brief Valida los nuevos campos del formulario
+ * @param campo Nombre del campo a validar
+ * @return bool True si es válido, false en caso contrario
+ * @version 1.1
+ */
+function validarCampoNuevo(campo) {
+    const input = document.getElementById(campo);
+    if (!input) return true;
+    
+    const valor = input.value.trim();
+    
+    // Si el campo está vacío, es válido (campos opcionales)
+    if (!valor) {
+        limpiarError(campo);
+        return true;
+    }
+    
+    switch(campo) {
+        case 'cif':
+            if (!isValidCIF(valor)) {
+                mostrarErrorCampo(campo, 'El formato del CIF/NIF no es válido (ej: A12345678, 12345678A)');
+                return false;
+            }
+            break;
+            
+        case 'cuenta_bancaria':
+            if (!isValidIBAN(valor)) {
+                mostrarErrorCampo(campo, 'El formato del IBAN no es válido (ej: ES00 1234 1234 1234 1234 1234)');
+                return false;
+            }
+            break;
+            
+        case 'nombre_fiscal':
+            if (valor.length < 3) {
+                mostrarErrorCampo(campo, 'El nombre fiscal debe tener al menos 3 caracteres');
+                return false;
+            }
+            break;
+            
+        case 'contacto':
+            if (valor.length < 2) {
+                mostrarErrorCampo(campo, 'El nombre del contacto debe tener al menos 2 caracteres');
+                return false;
+            }
+            break;
+    }
+    
+    limpiarError(campo);
+    return true;
+}
+
+/**
  * @brief Muestra un error en un campo específico
  * @param campo Nombre del campo
  * @param mensaje Mensaje de error a mostrar
@@ -454,7 +583,7 @@ function limpiarError(campo) {
 
 /**
  * @brief Guarda los datos del cliente (crear o actualizar)
- * @version 1.1
+ * @version 1.2
  */
 async function guardarCliente() {
     const form = document.getElementById('formCliente');
@@ -477,6 +606,12 @@ async function guardarCliente() {
         
         // Manejar checkbox de activo
         data.activo = form.querySelector('#activo') ? form.querySelector('#activo').checked : true;
+        
+        // Validar y convertir recargo de equivalencia
+        const recargoSelect = form.querySelector('#recargo_equivalencia');
+        if (recargoSelect && recargoSelect.value) {
+            data.recargo_equivalencia = parseFloat(recargoSelect.value);
+        }
         
         console.log('📤 Datos a enviar:', data);
         
@@ -573,6 +708,54 @@ function isValidEmail(email) {
 function isValidPhone(phone) {
     const phoneRegex = /^[+]?[0-9\s\-\(\)]{9,}$/;
     return phoneRegex.test(phone);
+}
+
+/**
+ * @brief Valida si un CIF/NIF tiene formato correcto
+ * @param cif CIF/NIF a validar
+ * @return Boolean true si es válido, false en caso contrario
+ * @version 1.2
+ */
+function isValidCIF(cif) {
+    if (!cif || cif.trim().length === 0) return true; // Campo opcional
+    
+    const cleanCif = cif.trim().toUpperCase().replace(/[\s-]/g, '');
+    console.log('🔍 Validando CIF limpio:', cleanCif);
+    
+    // Formatos válidos:
+    // NIF: 12345678A (8 dígitos + 1 letra)
+    // CIF: A12345678 (1 letra + 8 dígitos)
+    // NIE: X1234567A (1 letra + 7 dígitos + 1 letra)
+    const nifRegex = /^[0-9]{8}[A-Z]$/;           // DNI/NIF
+    const cifRegex = /^[A-Z][0-9]{8}$/;           // CIF
+    const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;      // NIE
+    
+    const isNif = nifRegex.test(cleanCif);
+    const isCif = cifRegex.test(cleanCif);
+    const isNie = nieRegex.test(cleanCif);
+    
+    console.log('🔍 Resultado validación CIF:', { isNif, isCif, isNie });
+    
+    return isNif || isCif || isNie;
+}
+
+/**
+ * @brief Valida si un IBAN tiene formato correcto
+ * @param iban IBAN a validar
+ * @return Boolean true si es válido, false en caso contrario
+ * @version 1.1
+ */
+function isValidIBAN(iban) {
+    if (!iban || iban.trim().length === 0) return true; // Campo opcional
+    
+    // Limpiar espacios y convertir a mayúsculas
+    const cleanIban = iban.replace(/\s/g, '').toUpperCase();
+    
+    // Validación básica de IBAN español (24 caracteres)
+    // ES + 2 dígitos de control + 20 dígitos
+    const ibanRegex = /^ES[0-9]{22}$/;
+    
+    return ibanRegex.test(cleanIban);
 }
 
 /**

@@ -14,7 +14,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
         <div class="card shadow">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
@@ -75,6 +75,79 @@
                                    required>
                             <div class="invalid-feedback" id="error-nombre"></div>
                         </div>
+
+                        <!-- Información Fiscal -->
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3 mt-3">
+                                <i class="fas fa-file-invoice me-2"></i>
+                                Información Fiscal
+                            </h6>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre_fiscal" class="form-label">
+                                Nombre Fiscal
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nombre_fiscal" 
+                                   name="nombre_fiscal" 
+                                   value="{{ cliente.nombre_fiscal if cliente }}"
+                                   placeholder="Nombre fiscal completo para facturas"
+                                   maxlength="150">
+                            <div class="form-text">
+                                Nombre exacto que aparecerá en las facturas
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="cif" class="form-label">
+                                CIF/NIF
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="cif" 
+                                   name="cif" 
+                                   value="{{ cliente.cif if cliente }}"
+                                   placeholder="Ej: A12345678"
+                                   maxlength="20">
+                            <div class="form-text">
+                                Número de identificación fiscal
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="contacto" class="form-label">
+                                Farmacéutico/Contacto
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="contacto" 
+                                   name="contacto" 
+                                   value="{{ cliente.contacto if cliente }}"
+                                   placeholder="Nombre del farmacéutico responsable"
+                                   maxlength="100">
+                            <div class="form-text">
+                                Nombre del farmacéutico o persona de contacto
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="recargo_equivalencia" class="form-label">
+                                Recargo de Equivalencia (%)
+                            </label>
+                            <select class="form-select" 
+                                    id="recargo_equivalencia" 
+                                    name="recargo_equivalencia">
+                                <option value="0" {% if not cliente or cliente.recargo_equivalencia == 0 %}selected{% endif %}>0% - Sin recargo</option>
+                                <option value="0.5" {% if cliente and cliente.recargo_equivalencia == 0.5 %}selected{% endif %}>0.5% - IVA 4%</option>
+                                <option value="1.4" {% if cliente and cliente.recargo_equivalencia == 1.4 %}selected{% endif %}>1.4% - IVA 10%</option>
+                                <option value="5.2" {% if cliente and cliente.recargo_equivalencia == 5.2 %}selected{% endif %}>5.2% - IVA 21%</option>
+                            </select>
+                            <div class="form-text">
+                                Porcentaje de recargo de equivalencia aplicable
+                            </div>
+                        </div>
                         
                         <!-- Información de Contacto -->
                         <div class="col-12">
@@ -128,6 +201,33 @@
                                        maxlength="100">
                             </div>
                             <div class="invalid-feedback" id="error-email"></div>
+                        </div>
+
+                        <!-- Información Bancaria -->
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3 mt-3">
+                                <i class="fas fa-university me-2"></i>
+                                Información Bancaria
+                            </h6>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="cuenta_bancaria" class="form-label">Cuenta Bancaria (IBAN)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-credit-card"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="cuenta_bancaria" 
+                                       name="cuenta_bancaria" 
+                                       value="{{ cliente.cuenta_bancaria if cliente }}"
+                                       placeholder="ES00 0000 0000 0000 0000 0000"
+                                       maxlength="34">
+                            </div>
+                            <div class="form-text">
+                                Número de cuenta bancaria para domiciliaciones (opcional)
+                            </div>
                         </div>
                         
                         <!-- Información Adicional -->

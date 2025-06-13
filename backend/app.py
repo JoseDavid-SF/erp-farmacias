@@ -7,8 +7,8 @@
 @details Archivo principal que inicializa Flask, configura la base de datos
          y define las rutas principales del sistema.
 @author José David Sánchez Fernández
-@version 6.1
-@date 2025-06-09
+@version 6.2
+@date 2025-06-10
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -25,7 +25,7 @@ def create_app(config_name=None):
              con todas las extensiones y configuraciones necesarias.
     @param config_name Nombre del entorno de configuración a usar
     @return Flask Instancia configurada de la aplicación
-    @version 6.0
+    @version 6.1
     """
     
     # Crear instancia de Flask
@@ -43,13 +43,18 @@ def create_app(config_name=None):
     
     # Registrar blueprints
     from routes.clientes import clientes_bp
+    from routes.pedidos import pedidos_bp
+    
     try:
         from routes.productos import productos_bp
         app.register_blueprint(productos_bp)
+        print("✅ Blueprint de productos registrado")
     except ImportError:
         print("⚠️ Blueprint de productos no encontrado")
     
     app.register_blueprint(clientes_bp)
+    app.register_blueprint(pedidos_bp)
+    print("✅ Blueprints de clientes y pedidos registrados")
     
     # Crear las tablas de la base de datos
     with app.app_context():
@@ -87,7 +92,7 @@ def create_app(config_name=None):
             return jsonify({
                 "status": "success",
                 "message": "API y base de datos PostgreSQL funcionando correctamente",
-                "version": "6.0",
+                "version": "6.2",
                 "database": "PostgreSQL conectado"
             })
         except Exception as e:
@@ -108,7 +113,8 @@ def create_app(config_name=None):
             "system": "ERP Proveedor Autónomo de Farmacias",
             "status": "running",
             "environment": config_name,
-            "database": "PostgreSQL"
+            "database": "PostgreSQL",
+            "modules": ["clientes", "productos", "pedidos", "facturas", "albaranes"]
         })
     
     @app.route('/api/home/estadisticas')
@@ -117,7 +123,7 @@ def create_app(config_name=None):
         @brief API para obtener todas las estadísticas del home
         @details Proporciona contadores de clientes, productos, pedidos y facturas
         @return JSON con estadísticas completas del sistema
-        @version 1.0
+        @version 1.1
         """
         try:
             from models.models import Cliente, Producto, Pedido, Factura
@@ -136,8 +142,10 @@ def create_app(config_name=None):
             # Estadísticas de pedidos - manejar si no existe la tabla
             try:
                 pedidos_pendientes = Pedido.query.filter_by(estado='pendiente').count()
+                total_pedidos = Pedido.query.count()
             except:
                 pedidos_pendientes = 0
+                total_pedidos = 0
             
             # Estadísticas de facturas del mes actual - manejar si no existe la tabla
             try:
@@ -151,6 +159,7 @@ def create_app(config_name=None):
                 'estadisticas': {
                     'total_clientes': total_clientes,
                     'total_productos': total_productos,
+                    'total_pedidos': total_pedidos,
                     'pedidos_pendientes': pedidos_pendientes,
                     'facturas_mes': facturas_mes
                 }
@@ -164,6 +173,7 @@ def create_app(config_name=None):
                 'estadisticas': {
                     'total_clientes': 0,
                     'total_productos': 0,
+                    'total_pedidos': 0,
                     'pedidos_pendientes': 0,
                     'facturas_mes': 0
                 }
@@ -174,7 +184,7 @@ def create_app(config_name=None):
         """
         @brief API para obtener actividad reciente del home con enlaces
         @return JSON con actividad reciente del sistema incluyendo enlaces
-        @version 2.0
+        @version 2.1
         """
         try:
             from models.models import Cliente, Producto, Pedido
@@ -182,8 +192,25 @@ def create_app(config_name=None):
             
             actividades = []
             
+            # Últimos pedidos creados
+            try:
+                pedidos_recientes = Pedido.query.order_by(Pedido.fecha_pedido.desc()).limit(3).all()
+                for pedido in pedidos_recientes:
+                    actividades.append({
+                        'tipo': 'pedido_nuevo',
+                        'mensaje': f'Nuevo pedido: {pedido.numero_pedido} - {pedido.cliente.nombre}',
+                        'fecha': pedido.fecha_pedido.isoformat(),
+                        'icono': 'fa-shopping-cart',
+                        'color': 'success',
+                        'enlace': f'/pedidos',
+                        'elemento_id': pedido.id,
+                        'elemento_tipo': 'pedido'
+                    })
+            except:
+                pass  # Si no existe la tabla pedidos
+            
             # Últimos clientes creados
-            clientes_recientes = Cliente.query.order_by(Cliente.fecha_creacion.desc()).limit(3).all()
+            clientes_recientes = Cliente.query.order_by(Cliente.fecha_creacion.desc()).limit(2).all()
             for cliente in clientes_recientes:
                 actividades.append({
                     'tipo': 'cliente_nuevo',
@@ -198,20 +225,37 @@ def create_app(config_name=None):
             
             # Últimos productos creados
             try:
-                productos_recientes = Producto.query.order_by(Producto.fecha_creacion.desc()).limit(3).all()
+                productos_recientes = Producto.query.order_by(Producto.fecha_creacion.desc()).limit(2).all()
                 for producto in productos_recientes:
                     actividades.append({
                         'tipo': 'producto_nuevo',
                         'mensaje': f'Nuevo producto: {producto.nombre}',
                         'fecha': producto.fecha_creacion.isoformat(),
                         'icono': 'fa-box',
-                        'color': 'success',
+                        'color': 'info',
                         'enlace': f'/productos',
                         'elemento_id': producto.id,
                         'elemento_tipo': 'producto'
                     })
             except:
                 pass  # Si no existe la tabla productos
+            
+            # Pedidos pendientes (alertas)
+            try:
+                pedidos_pendientes = Pedido.query.filter_by(estado='pendiente').count()
+                if pedidos_pendientes > 0:
+                    actividades.append({
+                        'tipo': 'pedidos_pendientes',
+                        'mensaje': f'{pedidos_pendientes} pedidos pendientes de confirmar',
+                        'fecha': datetime.now().isoformat(),
+                        'icono': 'fa-clock',
+                        'color': 'warning',
+                        'enlace': f'/pedidos?estado=pendiente',
+                        'elemento_id': None,
+                        'elemento_tipo': None
+                    })
+            except:
+                pass
             
             # Productos con stock bajo (últimos detectados)
             try:
@@ -242,7 +286,7 @@ def create_app(config_name=None):
                 actividades = [
                     {
                         'tipo': 'sistema',
-                        'mensaje': 'Sistema iniciado correctamente',
+                        'mensaje': 'Sistema ERP iniciado correctamente',
                         'fecha': datetime.now().isoformat(),
                         'icono': 'fa-check-circle',
                         'color': 'success',
@@ -252,11 +296,11 @@ def create_app(config_name=None):
                     },
                     {
                         'tipo': 'info',
-                        'mensaje': 'ERP listo para usar',
+                        'mensaje': 'ERP listo para gestionar pedidos',
                         'fecha': datetime.now().isoformat(),
                         'icono': 'fa-info-circle',
                         'color': 'info',
-                        'enlace': None,
+                        'enlace': '/pedidos/nuevo',
                         'elemento_id': None,
                         'elemento_tipo': None
                     }
@@ -264,7 +308,7 @@ def create_app(config_name=None):
             
             return jsonify({
                 'success': True,
-                'actividades': actividades[:5]  # Últimas 5 actividades
+                'actividades': actividades[:6]  # Últimas 6 actividades
             })
             
         except Exception as e:
@@ -319,19 +363,66 @@ def create_app(config_name=None):
                 'productos': []
             })
     
+    @app.route('/api/home/pedidos-resumen')
+    def api_home_pedidos_resumen():
+        """
+        @brief API para obtener resumen de pedidos para el home
+        @return JSON con resumen de pedidos por estado
+        @version 1.0
+        """
+        try:
+            from models.models import Pedido
+            from sqlalchemy import func
+            
+            try:
+                # Contar pedidos por estado
+                resumen = db.session.query(
+                    Pedido.estado,
+                    func.count(Pedido.id).label('cantidad'),
+                    func.sum(Pedido.total).label('valor_total')
+                ).group_by(Pedido.estado).all()
+                
+                pedidos_resumen = {}
+                for estado, cantidad, valor in resumen:
+                    pedidos_resumen[estado] = {
+                        'cantidad': cantidad,
+                        'valor_total': float(valor) if valor else 0
+                    }
+                
+                return jsonify({
+                    'success': True,
+                    'resumen': pedidos_resumen
+                })
+                
+            except:
+                return jsonify({
+                    'success': True,
+                    'resumen': {}
+                })
+                
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'Error al obtener resumen de pedidos: {str(e)}',
+                'resumen': {}
+            })
+    
     return app
 
 if __name__ == '__main__':
     """
     @brief Punto de entrada principal de la aplicación
     @details Crea y ejecuta la aplicación Flask en modo desarrollo
-    @version 6.0
+    @version 6.1
     """
     # Crear y ejecutar la aplicación
     app = create_app()
     
     print("🚀 Iniciando ERP Proveedor Autónomo de Farmacias...")
     print("📊 Home disponible en: http://localhost:5000")
+    print("👥 Clientes disponible en: http://localhost:5000/clientes")
+    print("📦 Productos disponible en: http://localhost:5000/productos")
+    print("🛒 Pedidos disponible en: http://localhost:5000/pedidos")
     print("🔧 API disponible en: http://localhost:5000/api/test")
     print("📋 Estado del sistema: http://localhost:5000/api/status")
     

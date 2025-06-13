@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos - ERP Farmacias{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+<li class="breadcrumb-item active">Pedidos</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-shopping-cart me-2"></i>
+                Gestión de Pedidos
+            </h1>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" onclick="exportarPedidos()">
+                    <i class="fas fa-download me-1"></i>Exportar
+                </button>
+                <a href="{{ url_for('pedidos.nuevo_pedido') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Nuevo Pedido
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Búsqueda y Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Buscar Pedido</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="search" 
+                                   name="search" 
+                                   value="{{ search }}"
+                                   placeholder="Buscar por número, cliente...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">Todos los estados</option>
+                            {% for est in estados %}
+                            <option value="{{ est }}" {% if estado == est %}selected{% endif %}>
+                                {{ est.title() }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Acciones Rápidas</label>
+                        <div class="d-flex gap-1">
+                            <button type="button" 
+                                    class="btn btn-outline-warning btn-sm"
+                                    onclick="filtrarPendientes()">
+                                <i class="fas fa-clock me-1"></i>Pendientes
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                            <a href="{{ url_for('pedidos.lista_pedidos') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Pedidos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Pedidos</h5>
+                    <span class="badge bg-primary">{{ pedidos.total }} pedidos</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if pedidos.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pedido in pedidos.items %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ pedido.numero_pedido }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ pedido.cliente.nombre }}</strong>
+                                    <br><small class="text-muted">{{ pedido.cliente.codigo }}</small>
+                                    {% if pedido.cliente.telefono %}
+                                    <br><small class="text-muted">
+                                        <i class="fas fa-phone me-1"></i>{{ pedido.cliente.telefono }}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ pedido.fecha_pedido.strftime('%d/%m/%Y') }}</div>
+                                    <small class="text-muted">{{ pedido.fecha_pedido.strftime('%H:%M') }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ pedido.items|length }} items</span>
+                                    {% if pedido.productos_pendientes %}
+                                    <br><small class="text-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Con pendientes
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="text-end">
+                                        <strong class="text-success">{{ "%.2f"|format(pedido.total) }}€</strong>
+                                        {% if pedido.subtotal != pedido.total %}
+                                        <br><small class="text-muted">
+                                            Sin IVA: {{ "%.2f"|format(pedido.subtotal) }}€
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if pedido.estado == 'pendiente' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock me-1"></i>Pendiente
+                                    </span>
+                                    {% elif pedido.estado == 'confirmado' %}
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-check me-1"></i>Confirmado
+                                    </span>
+                                    {% elif pedido.estado == 'entregado' %}
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-truck me-1"></i>Entregado
+                                    </span>
+                                    {% elif pedido.estado == 'facturado' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-file-invoice me-1"></i>Facturado
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" 
+                                                class="btn btn-outline-info btn-ver-detalle-pedido" 
+                                                data-pedido-id="{{ pedido.id }}"
+                                                data-bs-toggle="tooltip" 
+                                                title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if pedido.estado in ['pendiente', 'confirmado'] %}
+                                        <a href="{{ url_for('pedidos.editar_pedido', id=pedido.id) }}" 
+                                           class="btn btn-outline-warning"
+                                           data-bs-toggle="tooltip" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" 
+                                                    class="btn btn-outline-secondary dropdown-toggle" 
+                                                    data-bs-toggle="dropdown">
+                                                <i class="fas fa-cog"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% if pedido.estado == 'pendiente' %}
+                                                <li>
+                                                    <button class="dropdown-item btn-cambiar-estado" 
+                                                            data-pedido-id="{{ pedido.id }}" 
+                                                            data-estado="confirmado">
+                                                        <i class="fas fa-check me-2 text-info"></i>Confirmar
+                                                    </button>
+                                                </li>
+                                                {% endif %}
+                                                {% if pedido.estado == 'confirmado' %}
+                                                <li>
+                                                    <button class="dropdown-item btn-cambiar-estado" 
+                                                            data-pedido-id="{{ pedido.id }}" 
+                                                            data-estado="entregado">
+                                                        <i class="fas fa-truck me-2 text-primary"></i>Marcar Entregado
+                                                    </button>
+                                                </li>
+                                                {% endif %}
+                                                {% if pedido.estado == 'entregado' %}
+                                                <li>
+                                                    <button class="dropdown-item btn-cambiar-estado" 
+                                                            data-pedido-id="{{ pedido.id }}" 
+                                                            data-estado="facturado">
+                                                        <i class="fas fa-file-invoice me-2 text-success"></i>Facturar
+                                                    </button>
+                                                </li>
+                                                {% endif %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button class="dropdown-item btn-imprimir-pedido" 
+                                                            data-pedido-id="{{ pedido.id }}">
+                                                        <i class="fas fa-print me-2 text-secondary"></i>Imprimir
+                                                    </button>
+                                                </li>
+                                                {% if pedido.estado == 'pendiente' %}
+                                                <li>
+                                                    <button class="dropdown-item text-danger btn-eliminar-pedido" 
+                                                            data-pedido-id="{{ pedido.id }}"
+                                                            data-pedido-numero="{{ pedido.numero_pedido }}">
+                                                        <i class="fas fa-trash me-2"></i>Eliminar
+                                                    </button>
+                                                </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-shopping-cart fa-3x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">No hay pedidos registrados</h5>
+                    {% if search or estado %}
+                    <p class="text-muted">No se encontraron pedidos con los filtros aplicados</p>
+                    <a href="{{ url_for('pedidos.lista_pedidos') }}" class="btn btn-outline-primary">
+                        Ver todos los pedidos
+                    </a>
+                    {% else %}
+                    <p class="text-muted">Comienza creando tu primer pedido</p>
+                    <a href="{{ url_for('pedidos.nuevo_pedido') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Crear Primer Pedido
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Paginación -->
+            {% if pedidos.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Paginación de pedidos">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if pedidos.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('pedidos.lista_pedidos', page=pedidos.prev_num, search=search, estado=estado) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pedidos.iter_pages() %}
+                        {% if page_num %}
+                        {% if page_num != pedidos.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('pedidos.lista_pedidos', page=page_num, search=search, estado=estado) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if pedidos.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('pedidos.lista_pedidos', page=pedidos.next_num, search=search, estado=estado) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para detalles del pedido -->
+<div class="modal fade" id="modalDetallePedido" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shopping-cart me-2"></i>
+                    Detalles del Pedido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detallePedidoContent">
+                <!-- El contenido se carga dinámicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pedidos.js') }}"></script>
+{% endblock %}

@@ -7,8 +7,8 @@
 @details Este módulo contiene todas las rutas relacionadas con la gestión
          de productos: crear, listar, editar, eliminar y control de stock.
 @author José David Sánchez Fernández
-@version 1.1
-@date 2025-06-09
+@version 1.2
+@date 2025-06-10
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -28,7 +28,7 @@ def lista_productos():
     @details Muestra una tabla paginada con todos los productos registrados,
              con opción de búsqueda y filtros por categoría y stock.
     @return Template HTML con la lista de productos
-    @version 1.0
+    @version 1.1
     """
     try:
         page = request.args.get('page', 1, type=int)
@@ -44,7 +44,11 @@ def lista_productos():
             query = query.filter(
                 (Producto.nombre.ilike(search_filter)) |
                 (Producto.codigo.ilike(search_filter)) |
-                (Producto.descripcion.ilike(search_filter))
+                (Producto.descripcion.ilike(search_filter)) |
+                (Producto.codigo_nacional.ilike(search_filter)) |
+                (Producto.num_referencia.ilike(search_filter)) |
+                (Producto.nombre_proveedor.ilike(search_filter)) |
+                (Producto.marca.ilike(search_filter))
             )
         
         # Filtrar por categoría
@@ -74,7 +78,7 @@ def lista_productos():
         except:
             categorias = []
         
-        return render_template('productos/catalogo.html', 
+        return render_template('productos/lista.html', 
                              productos=productos, 
                              search=search,
                              categoria=categoria,
@@ -120,10 +124,10 @@ def detalle_producto(id):
 @productos_bp.route('/api/detalle/<int:id>')
 def api_detalle_producto(id):
     """
-    @brief API para obtener detalles de un producto incluyendo fecha de caducidad
+    @brief API para obtener detalles de un producto incluyendo todos los campos
     @param id ID del producto
     @return JSON con datos completos del producto
-    @version 1.0
+    @version 1.1
     """
     try:
         producto = Producto.query.get_or_404(id)
@@ -145,7 +149,7 @@ def api_crear_producto():
     @brief API para crear un nuevo producto
     @details Procesa los datos del formulario y crea un producto en la base de datos
     @return JSON con resultado de la operación
-    @version 1.0
+    @version 1.1
     """
     try:
         data = request.get_json()
@@ -176,6 +180,22 @@ def api_crear_producto():
                 'success': False,
                 'message': 'El precio debe ser un número válido mayor o igual a 0'
             }), 400
+        
+        # Validar IVA
+        iva_porcentaje = Decimal('21.0')  # Por defecto 21%
+        if data.get('iva_porcentaje'):
+            try:
+                iva_porcentaje = Decimal(str(data['iva_porcentaje']))
+                if iva_porcentaje not in [Decimal('4'), Decimal('10'), Decimal('21')]:
+                    return jsonify({
+                        'success': False,
+                        'message': 'El IVA debe ser 4%, 10% o 21%'
+                    }), 400
+            except (ValueError, TypeError):
+                return jsonify({
+                    'success': False,
+                    'message': 'El IVA debe ser un número válido'
+                }), 400
         
         # Validar stock
         try:
@@ -216,7 +236,13 @@ def api_crear_producto():
             lote=data.get('lote', '').strip(),
             fecha_caducidad=fecha_caducidad,
             categoria=data.get('categoria', '').strip(),
-            imagen_url=data.get('imagen_url', '').strip()
+            imagen_url=data.get('imagen_url', '').strip(),
+            # Nuevos campos
+            codigo_nacional=data.get('codigo_nacional', '').strip(),
+            num_referencia=data.get('num_referencia', '').strip(),
+            nombre_proveedor=data.get('nombre_proveedor', '').strip(),
+            marca=data.get('marca', '').strip(),
+            iva_porcentaje=iva_porcentaje
         )
         
         print(f"✅ Producto creado en memoria: {producto}")  # Debug log
@@ -246,7 +272,7 @@ def api_actualizar_producto(id):
     @brief API para actualizar un producto existente
     @param id ID del producto a actualizar
     @return JSON con resultado de la operación
-    @version 1.0
+    @version 1.1
     """
     try:
         producto = Producto.query.get_or_404(id)
@@ -282,6 +308,22 @@ def api_actualizar_producto(id):
                 'message': 'El precio debe ser un número válido mayor o igual a 0'
             }), 400
         
+        # Validar IVA
+        iva_porcentaje = Decimal('21.0')  # Por defecto 21%
+        if data.get('iva_porcentaje'):
+            try:
+                iva_porcentaje = Decimal(str(data['iva_porcentaje']))
+                if iva_porcentaje not in [Decimal('4'), Decimal('10'), Decimal('21')]:
+                    return jsonify({
+                        'success': False,
+                        'message': 'El IVA debe ser 4%, 10% o 21%'
+                    }), 400
+            except (ValueError, TypeError):
+                return jsonify({
+                    'success': False,
+                    'message': 'El IVA debe ser un número válido'
+                }), 400
+        
         # Validar stock
         try:
             stock = int(data.get('stock', 0))
@@ -305,7 +347,7 @@ def api_actualizar_producto(id):
                     'message': 'Formato de fecha de caducidad inválido'
                 }), 400
         
-        # Actualizar datos
+        # Actualizar datos básicos
         producto.codigo = data['codigo'].strip().upper()
         producto.nombre = data['nombre'].strip()
         producto.descripcion = data.get('descripcion', '').strip()
@@ -317,6 +359,13 @@ def api_actualizar_producto(id):
         producto.categoria = data.get('categoria', '').strip()
         producto.imagen_url = data.get('imagen_url', '').strip()
         producto.activo = data.get('activo', True)
+        
+        # Actualizar nuevos campos
+        producto.codigo_nacional = data.get('codigo_nacional', '').strip()
+        producto.num_referencia = data.get('num_referencia', '').strip()
+        producto.nombre_proveedor = data.get('nombre_proveedor', '').strip()
+        producto.marca = data.get('marca', '').strip()
+        producto.iva_porcentaje = iva_porcentaje
         
         db.session.commit()
         
@@ -364,9 +413,9 @@ def api_eliminar_producto(id):
 def api_buscar_productos():
     """
     @brief API para buscar productos
-    @details Busca productos por código, nombre o descripción
+    @details Busca productos por código, nombre, descripción y nuevos campos
     @return JSON con lista de productos encontrados
-    @version 1.0
+    @version 1.1
     """
     try:
         termino = request.args.get('q', '').strip()
@@ -380,7 +429,11 @@ def api_buscar_productos():
             Producto.activo == True,
             (Producto.nombre.ilike(search_filter)) |
             (Producto.codigo.ilike(search_filter)) |
-            (Producto.descripcion.ilike(search_filter))
+            (Producto.descripcion.ilike(search_filter)) |
+            (Producto.codigo_nacional.ilike(search_filter)) |
+            (Producto.num_referencia.ilike(search_filter)) |
+            (Producto.nombre_proveedor.ilike(search_filter)) |
+            (Producto.marca.ilike(search_filter))
         ).limit(limite).all()
         
         return jsonify({

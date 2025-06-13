@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if pedido %}Editar Pedido{% else %}Nuevo Pedido{% endif %} - ERP Farmacias
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('pedidos.lista_pedidos') }}">Pedidos</a></li>
+<li class="breadcrumb-item active">{% if pedido %}Editar{% else %}Nuevo{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0 text-primary">
+                    <i class="fas fa-shopping-cart me-2"></i>
+                    {% if pedido %}
+                    Editar Pedido: {{ pedido.numero_pedido }}
+                    {% else %}
+                    Nuevo Pedido
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="formPedido" novalidate>
+                    {% if pedido %}
+                    <input type="hidden" id="pedido_id" value="{{ pedido.id }}">
+                    {% endif %}
+                    
+                    <!-- Información del Cliente -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                <i class="fas fa-user me-2"></i>
+                                Información del Cliente
+                            </h6>
+                        </div>
+                        <div class="col-md-8">
+                            <label for="cliente_search" class="form-label">Cliente *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="cliente_search" 
+                                       placeholder="Buscar cliente por código o nombre..."
+                                       {% if cliente %}value="{{ cliente.codigo }} - {{ cliente.nombre }}"{% endif %}
+                                       {% if pedido %}value="{{ pedido.cliente.codigo }} - {{ pedido.cliente.nombre }}"{% endif %}>
+                                <input type="hidden" id="cliente_id" 
+                                       {% if cliente %}value="{{ cliente.id }}"{% endif %}
+                                       {% if pedido %}value="{{ pedido.cliente_id }}"{% endif %}>
+                            </div>
+                            <div class="invalid-feedback" id="error-cliente">
+                                Por favor selecciona un cliente válido
+                            </div>
+                            <div id="cliente_resultados" class="position-absolute w-100 bg-white border rounded shadow-sm" style="z-index: 1000; display: none;"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="estado">
+                                <option value="pendiente" {% if not pedido or pedido.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                <option value="confirmado" {% if pedido and pedido.estado == 'confirmado' %}selected{% endif %}>Confirmado</option>
+                                <option value="entregado" {% if pedido and pedido.estado == 'entregado' %}selected{% endif %}>Entregado</option>
+                                <option value="facturado" {% if pedido and pedido.estado == 'facturado' %}selected{% endif %}>Facturado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Productos del Pedido -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                <i class="fas fa-box me-2"></i>
+                                Productos del Pedido
+                            </h6>
+                        </div>
+                        <div class="col-12">
+                            <!-- Búsqueda de productos -->
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label for="producto_search" class="form-label">Buscar Producto</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="producto_search" 
+                                               placeholder="Buscar por código, referencia o nombre...">
+                                    </div>
+                                    <div id="producto_resultados" class="position-absolute w-100 bg-white border rounded shadow-sm" style="z-index: 1000; display: none;"></div>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-primary w-100" id="btn_agregar_producto" disabled>
+                                        <i class="fas fa-plus me-1"></i>Agregar Producto
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Lista de productos agregados -->
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="tabla_productos">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="15%">Código</th>
+                                            <th width="35%">Producto</th>
+                                            <th width="10%">Cantidad</th>
+                                            <th width="15%">Precio Unit.</th>
+                                            <th width="15%">Subtotal</th>
+                                            <th width="10%">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="items_pedido">
+                                        <!-- Los items se agregan dinámicamente -->
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <td colspan="4" class="text-end"><strong>Subtotal (sin IVA):</strong></td>
+                                            <td class="text-end"><strong id="subtotal_pedido">0.00€</strong></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="4" class="text-end"><strong>IVA:</strong></td>
+                                            <td class="text-end"><strong id="iva_pedido">0.00€</strong></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="4" class="text-end"><strong>Recargo Equivalencia:</strong></td>
+                                            <td class="text-end"><strong id="recargo_pedido">0.00€</strong></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr class="table-primary">
+                                            <td colspan="4" class="text-end"><strong>TOTAL:</strong></td>
+                                            <td class="text-end"><strong id="total_pedido">0.00€</strong></td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Productos Pendientes -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Productos Pendientes
+                                <small class="text-muted">(Productos solicitados que no están disponibles)</small>
+                            </h6>
+                        </div>
+                        <div class="col-12">
+                            <label for="productos_pendientes" class="form-label">Lista de productos pendientes</label>
+                            <textarea class="form-control" 
+                                      id="productos_pendientes" 
+                                      rows="3"
+                                      placeholder="Ej: Paracetamol 500mg x 2 cajas, Ibuprofeno 600mg x 1 caja...">{% if pedido %}{{ pedido.productos_pendientes }}{% endif %}</textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Anota aquí los productos que el cliente solicita pero que no tienes disponibles
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                Observaciones
+                            </h6>
+                        </div>
+                        <div class="col-12">
+                            <label for="observaciones" class="form-label">Notas del pedido</label>
+                            <textarea class="form-control" 
+                                      id="observaciones" 
+                                      rows="3"
+                                      placeholder="Observaciones adicionales sobre el pedido...">{% if pedido %}{{ pedido.observaciones }}{% endif %}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('pedidos.lista_pedidos') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>Volver a la Lista
+                                </a>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-primary" id="btn_borrador">
+                                        <i class="fas fa-save me-1"></i>Guardar Borrador
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-check me-1"></i>
+                                        {% if pedido %}Actualizar Pedido{% else %}Crear Pedido{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para seleccionar cantidad -->
+<div class="modal fade" id="modalCantidad" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cantidad del Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="cantidad_producto" class="form-label">Cantidad</label>
+                    <input type="number" 
+                           class="form-control" 
+                           id="cantidad_producto" 
+                           min="1" 
+                           value="1"
+                           placeholder="Cantidad">
+                    <div class="form-text" id="stock_info"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmar_cantidad">Agregar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para confirmar eliminación de item -->
+<div class="modal fade" id="modalEliminarItem" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Eliminar Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar este producto del pedido?</p>
+                <p class="text-muted" id="producto_eliminar_nombre"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmar_eliminar_item">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pedidos.js') }}"></script>
+{% endblock %}
