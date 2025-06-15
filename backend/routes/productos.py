@@ -34,7 +34,10 @@ def lista_productos():
         page = request.args.get('page', 1, type=int)
         search = request.args.get('search', '', type=str)
         categoria = request.args.get('categoria', '', type=str)
-        stock_bajo = request.args.get('stock_bajo', False, type=bool)
+        
+        # Corregir el manejo del parámetro stock_bajo
+        stock_bajo_param = request.args.get('stock_bajo', '').lower()
+        stock_bajo = stock_bajo_param in ['true', '1', 'on', 'yes']
         
         query = Producto.query
         

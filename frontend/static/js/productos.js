@@ -145,7 +145,7 @@ function configurarEventListenersProductos() {
 
 /**
  * @brief Configura la búsqueda en tiempo real de productos (SOLO EN LISTA)
- * @version 1.1
+ * @version 1.2
  */
 function configurarBusquedaProductos() {
     const inputBusqueda = document.getElementById('search');
@@ -172,12 +172,27 @@ function configurarBusquedaProductos() {
         });
     }
     
+    // Configurar checkbox de stock bajo para que NO se auto-envíe
     const checkboxStockBajo = document.getElementById('stock_bajo');
-    if (checkboxStockBajo) {
-        checkboxStockBajo.addEventListener('change', function() {
-            this.form.submit();
+    if (checkboxStockBajo && !esFormulario) {
+        // Remover cualquier event listener previo que cause auto-submit
+        checkboxStockBajo.removeEventListener('change', autoSubmitHandler);
+        
+        // Solo auto-submit si el usuario hace clic manualmente
+        checkboxStockBajo.addEventListener('change', function(e) {
+            // Solo hacer submit si el cambio fue por interacción del usuario
+            if (e.isTrusted) {
+                this.form.submit();
+            }
         });
     }
+}
+
+/**
+ * @brief Handler para auto-submit (removido para evitar conflictos)
+ */
+function autoSubmitHandler() {
+    // Función vacía para remover event listeners previos
 }
 
 /**
