@@ -31,10 +31,73 @@ body {
     min-height: calc(100vh - var(--navbar-height) - 80px);
 }
 
+/* ========================================
+   ESTILOS DEL LOGO
+   ======================================== */
+
+/* Logo en la navbar */
+.logo-navbar {
+    height: 28px;
+    width: auto;
+    filter: brightness(0) invert(1); /* Convierte el logo a blanco */
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.logo-navbar:hover {
+    transform: scale(1.1);
+}
+
+/* Logo grande para página principal */
+.logo-principal {
+    height: 80px;
+    width: auto;
+    transition: transform 0.3s ease;
+}
+
+.logo-principal:hover {
+    transform: scale(1.05);
+}
+
+/* Logo mediano para formularios y páginas internas */
+.logo-mediano {
+    height: 48px;
+    width: auto;
+}
+
+/* Logo pequeño para elementos compactos */
+.logo-pequeno {
+    height: 24px;
+    width: auto;
+}
+
+/* Logo en el footer */
+.logo-footer {
+    height: 20px;
+    width: auto;
+    opacity: 0.7;
+}
+
+/* Responsive para logos */
+@media (max-width: 768px) {
+    .logo-navbar {
+        height: 24px;
+    }
+    
+    .logo-principal {
+        height: 60px;
+    }
+    
+    .logo-mediano {
+        height: 36px;
+    }
+}
+
 /* Navegación */
 .navbar-brand {
     font-weight: 600;
     font-size: 1.25rem;
+    display: flex;
+    align-items: center;
 }
 
 .navbar-nav .nav-link {
