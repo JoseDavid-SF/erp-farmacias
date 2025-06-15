@@ -4,8 +4,8 @@
  * @details Funciones para manejar las operaciones CRUD de pedidos,
  *          búsquedas, validaciones y control de items.
  * @author José David Sánchez Fernández
- * @version 1.0
- * @date 2025-06-10
+ * @version 1.1
+ * @date 2025-06-14
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
 
@@ -239,14 +239,11 @@ async function buscarClientes(termino) {
                 html += `
                     <button type="button" 
                             class="list-group-item list-group-item-action" 
-                            onclick="seleccionarCliente(${cliente.id}, '${cliente.codigo}', '${cliente.nombre}', ${cliente.recargo_equivalencia || 0})">
+                            onclick="seleccionarCliente(${cliente.id}, '${cliente.codigo}', '${cliente.nombre}', 0)">
                         <div class="d-flex justify-content-between">
                             <div>
                                 <strong>${cliente.codigo}</strong> - ${cliente.nombre}
                             </div>
-                            <small class="text-muted">
-                                ${cliente.recargo_equivalencia ? `RE: ${cliente.recargo_equivalencia}%` : ''}
-                            </small>
                         </div>
                         ${cliente.direccion ? `<small class="text-muted">${cliente.direccion}</small>` : ''}
                     </button>
@@ -366,6 +363,8 @@ async function buscarProductos(termino) {
                             <div class="text-end">
                                 <div class="fw-bold text-success">${producto.pvf_sin_iva.toFixed(2)}€ + IVA</div>
                                 <small class="${stockClass}">Stock: ${producto.stock}</small>
+                                ${producto.recargo_equivalencia_calculado > 0 ? 
+                                    `<br><small class="text-info">RE: ${producto.recargo_equivalencia_calculado.toFixed(1)}%</small>` : ''}
                             </div>
                         </div>
                         ${producto.descripcion ? `<small class="text-muted">${producto.descripcion.substring(0, 100)}...</small>` : ''}
@@ -469,6 +468,7 @@ function agregarProductoAPedido(producto, cantidad) {
             cantidad: cantidad,
             precio_unitario_sin_iva: producto.pvf_sin_iva,
             iva_porcentaje: producto.iva_porcentaje,
+            recargo_equivalencia: producto.recargo_equivalencia_calculado || 0,
             subtotal_sin_iva: cantidad * producto.pvf_sin_iva,
             total_iva: (cantidad * producto.pvf_sin_iva) * (producto.iva_porcentaje / 100),
             subtotal_con_iva: 0,
@@ -504,6 +504,7 @@ function actualizarTablaItems() {
                 <strong>${item.producto_nombre}</strong>
                 <br><small class="text-muted">
                     IVA: ${item.iva_porcentaje}%
+                    ${item.recargo_equivalencia > 0 ? ` | RE: ${item.recargo_equivalencia.toFixed(1)}%` : ''}
                 </small>
             </td>
             <td>
@@ -579,18 +580,21 @@ function eliminarItemPedido(itemId, productoNombre) {
 }
 
 /**
- * @brief Calcula los totales del pedido
- * @version 1.0
+ * @brief Calcula los totales del pedido con recargo de equivalencia por producto
+ * @version 1.1
  */
 function calcularTotalesPedido() {
     const subtotal = itemsPedido.reduce((sum, item) => sum + item.subtotal_sin_iva, 0);
     const totalIva = itemsPedido.reduce((sum, item) => sum + item.total_iva, 0);
     
-    // Calcular recargo de equivalencia del cliente
+    // Calcular recargo de equivalencia basado en los productos individuales
     let totalRecargo = 0;
-    if (clienteSeleccionado && clienteSeleccionado.recargo_equivalencia) {
-        totalRecargo = subtotal * (clienteSeleccionado.recargo_equivalencia / 100);
-    }
+    itemsPedido.forEach(item => {
+        if (item.recargo_equivalencia && item.recargo_equivalencia > 0) {
+            const recargoItem = item.subtotal_sin_iva * (item.recargo_equivalencia / 100);
+            totalRecargo += recargoItem;
+        }
+    });
     
     const total = subtotal + totalIva + totalRecargo;
     
@@ -651,12 +655,11 @@ async function guardarPedido(esBorrador = false) {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
     
     try {
-        // Preparar datos del pedido
+        // Preparar datos del pedido - SIN productos_pendientes
         const data = {
             cliente_id: document.getElementById('cliente_id').value,
             estado: esBorrador ? 'pendiente' : document.getElementById('estado').value,
             observaciones: document.getElementById('observaciones').value,
-            productos_pendientes: document.getElementById('productos_pendientes').value,
             items: itemsPedido.map(item => ({
                 producto_id: item.producto_id,
                 cantidad: item.cantidad
@@ -769,6 +772,7 @@ function cargarItemsExistentes(items) {
             cantidad: item.cantidad,
             precio_unitario_sin_iva: item.precio_unitario_sin_iva,
             iva_porcentaje: item.iva_porcentaje,
+            recargo_equivalencia: 0, // Se calculará automáticamente
             subtotal_sin_iva: item.subtotal_sin_iva,
             total_iva: item.total_iva,
             subtotal_con_iva: item.subtotal_con_iva,
@@ -951,10 +955,9 @@ function mostrarDetallePedido(pedido) {
         </div>
         ` : ''}
         
-        ${(pedido.observaciones || pedido.productos_pendientes) ? `
+        ${pedido.observaciones ? `
         <div class="row mt-4">
             <div class="col-12">
-                ${pedido.observaciones ? `
                 <div class="mb-3">
                     <h6 class="text-primary mb-2">
                         <i class="fas fa-sticky-note me-2"></i>
@@ -964,19 +967,6 @@ function mostrarDetallePedido(pedido) {
                         <div class="text-muted">${pedido.observaciones}</div>
                     </div>
                 </div>
-                ` : ''}
-                
-                ${pedido.productos_pendientes ? `
-                <div class="mb-3">
-                    <h6 class="text-warning mb-2">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Productos Pendientes
-                    </h6>
-                    <div class="alert alert-warning border">
-                        <div>${pedido.productos_pendientes}</div>
-                    </div>
-                </div>
-                ` : ''}
             </div>
         </div>
         ` : ''}

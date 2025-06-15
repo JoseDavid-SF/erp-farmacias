@@ -7,8 +7,8 @@
 @details Este módulo contiene todos los modelos de SQLAlchemy que representan 
          las entidades del sistema: clientes, productos, pedidos, facturas y albaranes.
 @author José David Sánchez Fernández
-@version 4.3
-@date 2025-06-11
+@version 4.5
+@date 2025-06-13
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -24,7 +24,7 @@ class Cliente(db.Model):
     @brief Modelo para gestionar clientes del proveedor
     @details Representa la información completa de cada cliente farmacia,
              incluyendo datos de contacto, historial y estado.
-    @version 3.3
+    @version 3.5
     """
     __tablename__ = 'clientes'
     
@@ -46,8 +46,8 @@ class Cliente(db.Model):
     contacto = db.Column(db.String(100))  # Nombre del farmacéutico
     cuenta_bancaria = db.Column(db.String(34))  # IBAN
     
-    # Relaciones
-    pedidos = db.relationship('Pedido', backref='cliente', lazy=True)
+    # Relaciones con manejo de errores
+    pedidos = db.relationship('Pedido', backref='cliente', lazy='dynamic')
 
     def __repr__(self):
         return f'<Cliente {self.codigo}: {self.nombre}>'
@@ -74,7 +74,7 @@ class Producto(db.Model):
     @brief Modelo para gestionar productos del catálogo
     @details Representa cada producto farmacéutico con su información comercial,
              stock, precios y datos de control de caducidad.
-    @version 7.2
+    @version 7.3
     """
     __tablename__ = 'productos'
     
@@ -92,12 +92,15 @@ class Producto(db.Model):
     activo = db.Column(db.Boolean, default=True)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Nuevos campos para identificación y proveedor
+    # Campos para identificación y proveedor
     codigo_nacional = db.Column(db.String(20))  # Código Nacional del medicamento
     num_referencia = db.Column(db.String(30))  # Número de referencia
     nombre_proveedor = db.Column(db.String(100))  # Nombre del proveedor
     marca = db.Column(db.String(100))  # Marca del producto
     iva_porcentaje = db.Column(db.Numeric(5, 2), default=21.0)  # % IVA (4, 10, 21)
+    
+    # NUEVO: Recargo de equivalencia ahora en productos
+    recargo_equivalencia = db.Column(db.Numeric(5, 2), default=0.0)  # % Recargo de equivalencia
 
     def __repr__(self):
         return f'<Producto {self.codigo}: {self.nombre}>'
@@ -116,8 +119,13 @@ class Producto(db.Model):
         return self.precio or Decimal('0')
 
     @property
-    def recargo_equivalencia(self):
-        """Calcula el recargo de equivalencia basado en el IVA"""
+    def recargo_equivalencia_calculado(self):
+        """Calcula el recargo de equivalencia basado en el IVA si no está definido manualmente"""
+        # Si ya tiene un recargo manual definido, usarlo
+        if hasattr(self, 'recargo_equivalencia') and self.recargo_equivalencia and self.recargo_equivalencia > 0:
+            return self.recargo_equivalencia
+        
+        # Si no, calcular automáticamente basado en el IVA
         if not self.iva_porcentaje:
             return Decimal('0')
         
@@ -147,7 +155,8 @@ class Producto(db.Model):
             'pvf_sin_iva': float(self.pvf_sin_iva) if self.pvf_sin_iva else 0,
             'pvf_con_iva': float(self.pvf_con_iva) if self.pvf_con_iva else 0,
             'iva_porcentaje': float(self.iva_porcentaje) if self.iva_porcentaje else 21.0,
-            'recargo_equivalencia': float(self.recargo_equivalencia),
+            'recargo_equivalencia': float(self.recargo_equivalencia) if hasattr(self, 'recargo_equivalencia') and self.recargo_equivalencia else 0.0,
+            'recargo_equivalencia_calculado': float(self.recargo_equivalencia_calculado),
             'categoria': self.categoria,
             'stock': self.stock,
             'stock_minimo': self.stock_minimo,
@@ -156,7 +165,7 @@ class Producto(db.Model):
             'imagen_url': self.imagen_url,
             'activo': self.activo,
             'es_deposito': self.es_deposito,
-            # Nuevos campos
+            # Campos de identificación
             'codigo_nacional': self.codigo_nacional,
             'num_referencia': self.num_referencia,
             'nombre_proveedor': self.nombre_proveedor,
@@ -168,7 +177,7 @@ class Pedido(db.Model):
     @brief Modelo para gestionar pedidos de clientes
     @details Representa cada pedido realizado por un cliente, con su estado,
              total y relación con items individuales.
-    @version 3.2
+    @version 3.4
     """
     __tablename__ = 'pedidos'
     
@@ -179,7 +188,7 @@ class Pedido(db.Model):
     fecha_pedido = db.Column(db.DateTime, default=datetime.utcnow)
     estado = db.Column(db.String(20), default='pendiente')
     observaciones = db.Column(db.Text)
-    productos_pendientes = db.Column(db.Text)
+    # ELIMINADO: productos_pendientes (causaba error en BD)
     
     # Relaciones
     items = db.relationship('ItemPedido', backref='pedido', lazy=True, cascade='all, delete-orphan')
@@ -200,22 +209,12 @@ class Pedido(db.Model):
     @property
     def total_recargo(self):
         """Total recargo calculado dinámicamente basado en los productos"""
-        # El recargo se calcula por producto según su IVA
         total_recargo = Decimal('0')
         for item in self.items:
             if item.producto:
-                # Calcular recargo basado en el IVA del producto
-                iva = float(item.iva_porcentaje) if item.iva_porcentaje else 21.0
-                recargo_porcentaje = Decimal('0')
-                if iva == 4.0:
-                    recargo_porcentaje = Decimal('0.5')
-                elif iva == 10.0:
-                    recargo_porcentaje = Decimal('1.4')
-                elif iva == 21.0:
-                    recargo_porcentaje = Decimal('5.2')
+                # Usar el recargo del producto directamente
+                recargo_porcentaje = item.producto.recargo_equivalencia_calculado
                 
-                # Aplicar recargo solo si el cliente tiene recargo de equivalencia
-                # (esto se determinará por la ubicación/tipo de cliente)
                 if recargo_porcentaje > 0:
                     item_recargo = item.subtotal_sin_iva * (recargo_porcentaje / Decimal('100'))
                     total_recargo += item_recargo
@@ -231,7 +230,7 @@ class Pedido(db.Model):
         """
         @brief Calcula los totales del pedido
         @details Método para compatibilidad - los totales se calculan dinámicamente
-        @version 1.2
+        @version 1.3
         """
         # Los totales se calculan automáticamente via properties
         pass
@@ -250,7 +249,6 @@ class Pedido(db.Model):
             'total': float(self.total),
             'estado': self.estado,
             'observaciones': self.observaciones,
-            'productos_pendientes': self.productos_pendientes,
             'items_count': len(self.items) if self.items else 0
         }
 
@@ -259,7 +257,7 @@ class ItemPedido(db.Model):
     @brief Items individuales de cada pedido
     @details Representa cada producto dentro de un pedido específico,
              con cantidad, precio y subtotal calculado.
-    @version 2.2
+    @version 2.3
     """
     __tablename__ = 'items_pedido'
     
@@ -288,7 +286,7 @@ class ItemPedido(db.Model):
     def calcular_totales(self):
         """
         @brief Calcula los totales del item
-        @version 1.2
+        @version 1.3
         """
         self.subtotal_sin_iva = Decimal(str(self.cantidad)) * self.precio_unitario_sin_iva
         self.total_iva = self.subtotal_sin_iva * (self.iva_porcentaje / Decimal('100'))

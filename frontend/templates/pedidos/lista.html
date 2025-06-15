@@ -105,7 +105,7 @@
                                 <th>Cliente</th>
                                 <th>Fecha</th>
                                 <th>Items</th>
-                                <th>Total</th>
+                                <th>Totales</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
@@ -138,12 +138,55 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="text-end">
-                                        <strong class="text-success">{{ "%.2f"|format(pedido.total) }}€</strong>
-                                        {% if pedido.subtotal != pedido.total %}
-                                        <br><small class="text-muted">
-                                            Sin IVA: {{ "%.2f"|format(pedido.subtotal) }}€
-                                        </small>
+                                    <div class="text-end desglose-totales">
+                                        <!-- Total final destacado -->
+                                        <div class="fw-bold text-success fs-6 mb-2">
+                                            <i class="fas fa-euro-sign me-1"></i>{{ "%.2f"|format(pedido.total) }}€
+                                        </div>
+                                        
+                                        <!-- Desglose detallado -->
+                                        <div class="small">
+                                            <!-- Base imponible -->
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="text-muted">Base:</span>
+                                                <span class="text-primary fw-semibold">{{ "%.2f"|format(pedido.subtotal) }}€</span>
+                                            </div>
+                                            
+                                            <!-- IVA si existe -->
+                                            {% if pedido.total_iva > 0 %}
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="text-muted">
+                                                    <i class="fas fa-percentage me-1" style="font-size: 0.7rem;"></i>IVA:
+                                                </span>
+                                                <span class="text-warning fw-semibold">{{ "%.2f"|format(pedido.total_iva) }}€</span>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Recargo Equivalencia si existe -->
+                                            {% if pedido.total_recargo > 0 %}
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="text-muted">
+                                                    <i class="fas fa-plus me-1" style="font-size: 0.7rem;"></i>R.E.:
+                                                </span>
+                                                <span class="text-info fw-semibold">{{ "%.2f"|format(pedido.total_recargo) }}€</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Porcentajes efectivos calculados -->
+                                        {% if pedido.subtotal > 0 %}
+                                        <div class="mt-2 d-flex gap-1 justify-content-end">
+                                            {% if pedido.total_iva > 0 %}
+                                            <span class="badge bg-warning text-dark badge-porcentaje">
+                                                IVA {{ "%.1f"|format((pedido.total_iva / pedido.subtotal) * 100) }}%
+                                            </span>
+                                            {% endif %}
+                                            {% if pedido.total_recargo > 0 %}
+                                            <span class="badge bg-info text-dark badge-porcentaje">
+                                                RE {{ "%.1f"|format((pedido.total_recargo / pedido.subtotal) * 100) }}%
+                                            </span>
+                                            {% endif %}
+                                        </div>
                                         {% endif %}
                                     </div>
                                 </td>

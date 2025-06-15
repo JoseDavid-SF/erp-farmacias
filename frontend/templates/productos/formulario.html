@@ -1,340 +1,451 @@
 {% extends "base.html" %}
 
-{% block title %}Productos - ERP Farmacias{% endblock %}
+{% block title %}
+{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %} - ERP Farmacias
+{% endblock %}
 
 {% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
 <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
-<li class="breadcrumb-item active">Productos</li>
+<li class="breadcrumb-item"><a href="{{ url_for('productos.lista_productos') }}">Productos</a></li>
+<li class="breadcrumb-item active">
+    {% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}
+</li>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 mb-0">
-                <i class="fas fa-box me-2"></i>
-                Catálogo de Productos
-            </h1>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-primary" onclick="exportarProductos()">
-                    <i class="fas fa-download me-1"></i>Exportar
-                </button>
-                <a href="{{ url_for('productos.nuevo_producto') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-1"></i>Nuevo Producto
-                </a>
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas {% if producto %}fa-edit{% else %}fa-plus{% endif %} me-2"></i>
+                        {% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}
+                    </h5>
+                    <a href="{{ url_for('productos.lista_productos') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Volver
+                    </a>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Filtros y Búsqueda -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
             <div class="card-body">
-                <form method="GET" class="row g-3">
-                    <div class="col-md-4">
-                        <label for="search" class="form-label">Buscar Producto</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-search"></i>
-                            </span>
+                <form id="formProducto" novalidate>
+                    {% if producto %}
+                    <input type="hidden" id="producto_id" name="producto_id" value="{{ producto.id }}">
+                    {% endif %}
+
+                    <div class="row">
+                        <!-- Información Básica -->
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Información Básica
+                            </h6>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="codigo" class="form-label">
+                                Código <span class="text-danger">*</span>
+                            </label>
                             <input type="text" 
                                    class="form-control" 
-                                   id="search" 
-                                   name="search" 
-                                   value="{{ search }}"
-                                   placeholder="Buscar por nombre, código, marca, proveedor...">
+                                   id="codigo" 
+                                   name="codigo" 
+                                   value="{{ producto.codigo if producto }}"
+                                   placeholder="Ej: MED001"
+                                   maxlength="20"
+                                   required>
+                            <div class="invalid-feedback" id="error-codigo"></div>
+                            <div class="form-text">
+                                Código único para identificar el producto
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="categoria" class="form-label">Categoría</label>
-                        <select class="form-select" id="categoria" name="categoria">
-                            <option value="">Todas las categorías</option>
-                            {% for cat in categorias %}
-                            <option value="{{ cat }}" {% if categoria == cat %}selected{% endif %}>
-                                {{ cat }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Filtros</label>
-                        <div class="form-check">
-                            <input class="form-check-input" 
-                                   type="checkbox" 
-                                   id="stock_bajo" 
-                                   name="stock_bajo" 
-                                   value="true"
-                                   {% if stock_bajo %}checked{% endif %}>
-                            <label class="form-check-label" for="stock_bajo">
-                                Solo stock bajo
+
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">
+                                Nombre del Producto <span class="text-danger">*</span>
                             </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nombre" 
+                                   name="nombre" 
+                                   value="{{ producto.nombre if producto }}"
+                                   placeholder="Nombre completo del producto"
+                                   maxlength="100"
+                                   required>
+                            <div class="invalid-feedback" id="error-nombre"></div>
                         </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" 
+                                      id="descripcion" 
+                                      name="descripcion" 
+                                      rows="2"
+                                      placeholder="Descripción detallada del producto">{{ producto.descripcion if producto }}</textarea>
+                            <div class="form-text">
+                                Descripción completa del producto y sus características
+                            </div>
+                        </div>
+
+                        <!-- Información del Proveedor -->
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3 mt-3">
+                                <i class="fas fa-truck me-2"></i>
+                                Información del Proveedor
+                            </h6>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="codigo_nacional" class="form-label">Código Nacional</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="codigo_nacional" 
+                                   name="codigo_nacional" 
+                                   value="{{ producto.codigo_nacional if producto }}"
+                                   placeholder="Ej: 123456"
+                                   maxlength="20">
+                            <div class="invalid-feedback" id="error-codigo_nacional"></div>
+                            <div class="form-text">
+                                Código Nacional del medicamento (CNM)
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="num_referencia" class="form-label">Número de Referencia</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="num_referencia" 
+                                   name="num_referencia" 
+                                   value="{{ producto.num_referencia if producto }}"
+                                   placeholder="Ej: REF-2025-001"
+                                   maxlength="30">
+                            <div class="invalid-feedback" id="error-num_referencia"></div>
+                            <div class="form-text">
+                                Referencia interna del proveedor
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre_proveedor" class="form-label">Nombre del Proveedor</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nombre_proveedor" 
+                                   name="nombre_proveedor" 
+                                   value="{{ producto.nombre_proveedor if producto }}"
+                                   placeholder="Ej: Laboratorios ABC"
+                                   maxlength="100">
+                            <div class="invalid-feedback" id="error-nombre_proveedor"></div>
+                            <div class="form-text">
+                                Nombre completo del proveedor
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="marca" class="form-label">Marca del Producto</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="marca" 
+                                   name="marca" 
+                                   value="{{ producto.marca if producto }}"
+                                   placeholder="Ej: MarcaFarma"
+                                   maxlength="100">
+                            <div class="invalid-feedback" id="error-marca"></div>
+                            <div class="form-text">
+                                Marca comercial del producto
+                            </div>
+                        </div>
+
+                        <!-- Precio, IVA y Categoría -->
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3 mt-3">
+                                <i class="fas fa-euro-sign me-2"></i>
+                                Precio, IVA y Categoría
+                            </h6>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="precio" class="form-label">
+                                Precio (€) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="precio" 
+                                       name="precio" 
+                                       value="{{ producto.precio if producto }}"
+                                       step="0.01"
+                                       min="0"
+                                       placeholder="0.00"
+                                       required>
+                            </div>
+                            <div class="invalid-feedback" id="error-precio"></div>
+                            <div class="form-text">
+                                Precio de venta sin IVA
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="iva_porcentaje" class="form-label">
+                                IVA <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" 
+                                    id="iva_porcentaje" 
+                                    name="iva_porcentaje"
+                                    required>
+                                <option value="">Seleccionar IVA</option>
+                                <option value="4" {% if producto and producto.iva_porcentaje == 4 %}selected{% endif %}>4%</option>
+                                <option value="10" {% if producto and producto.iva_porcentaje == 10 %}selected{% endif %}>10%</option>
+                                <option value="21" {% if producto and (not producto.iva_porcentaje or producto.iva_porcentaje == 21) %}selected{% endif %}>21%</option>
+                            </select>
+                            <div class="invalid-feedback" id="error-iva_porcentaje"></div>
+                            <div class="form-text">
+                                Tipo de IVA aplicable al producto
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="recargo_equivalencia" class="form-label">Recargo de Equivalencia</label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="recargo_equivalencia" 
+                                       name="recargo_equivalencia" 
+                                       value="{{ producto.recargo_equivalencia if producto }}"
+                                       step="0.1"
+                                       min="0"
+                                       readonly>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text text-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Se calcula automáticamente según el IVA
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="categoria" class="form-label">Categoría</label>
+                            <select class="form-select" 
+                                    id="categoria" 
+                                    name="categoria">
+                                <option value="">Seleccionar categoría</option>
+                                <option value="Analgésicos" {% if producto and producto.categoria == 'Analgésicos' %}selected{% endif %}>Analgésicos</option>
+                                <option value="Antibióticos" {% if producto and producto.categoria == 'Antibióticos' %}selected{% endif %}>Antibióticos</option>
+                                <option value="Antiinflamatorios" {% if producto and producto.categoria == 'Antiinflamatorios' %}selected{% endif %}>Antiinflamatorios</option>
+                                <option value="Vitaminas" {% if producto and producto.categoria == 'Vitaminas' %}selected{% endif %}>Vitaminas</option>
+                                <option value="Suplementos" {% if producto and producto.categoria == 'Suplementos' %}selected{% endif %}>Suplementos</option>
+                                <option value="Dermatología" {% if producto and producto.categoria == 'Dermatología' %}selected{% endif %}>Dermatología</option>
+                                <option value="Digestivo" {% if producto and producto.categoria == 'Digestivo' %}selected{% endif %}>Digestivo</option>
+                                <option value="Respiratorio" {% if producto and producto.categoria == 'Respiratorio' %}selected{% endif %}>Respiratorio</option>
+                                <option value="Cardiovascular" {% if producto and producto.categoria == 'Cardiovascular' %}selected{% endif %}>Cardiovascular</option>
+                                <option value="Neurología" {% if producto and producto.categoria == 'Neurología' %}selected{% endif %}>Neurología</option>
+                            </select>
+                            <div class="form-text">
+                                Categoría del producto para mejor organización
+                            </div>
+                        </div>
+
+                        <div class="col-md-8 mb-3">
+                            <label for="imagen_url" class="form-label">URL de Imagen</label>
+                            <input type="url" 
+                                   class="form-control" 
+                                   id="imagen_url" 
+                                   name="imagen_url" 
+                                   value="{{ producto.imagen_url if producto }}"
+                                   placeholder="https://ejemplo.com/imagen.jpg">
+                            <div class="form-text">
+                                URL de la imagen del producto (opcional)
+                            </div>
+                        </div>
+
+                        <!-- Control de Stock -->
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3 mt-3">
+                                <i class="fas fa-warehouse me-2"></i>
+                                Control de Stock
+                            </h6>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="stock" class="form-label">Stock Actual</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="stock" 
+                                   name="stock" 
+                                   value="{{ producto.stock if producto else 0 }}"
+                                   min="0"
+                                   placeholder="0">
+                            <div class="invalid-feedback" id="error-stock"></div>
+                            <div class="form-text">
+                                Cantidad actual en inventario
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="stock_minimo" class="form-label">Stock Mínimo</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="stock_minimo" 
+                                   name="stock_minimo" 
+                                   value="{{ producto.stock_minimo if producto else 5 }}"
+                                   min="0"
+                                   placeholder="5">
+                            <div class="invalid-feedback" id="error-stock_minimo"></div>
+                            <div class="form-text">
+                                Alerta cuando el stock baje de este nivel
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="lote" class="form-label">Lote</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="lote" 
+                                   name="lote" 
+                                   value="{{ producto.lote if producto }}"
+                                   placeholder="Ej: L20250609"
+                                   maxlength="50">
+                            <div class="form-text">
+                                Número de lote del producto
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="fecha_caducidad" class="form-label">Fecha de Caducidad</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fecha_caducidad" 
+                                   name="fecha_caducidad" 
+                                   value="{{ producto.fecha_caducidad.strftime('%Y-%m-%d') if producto and producto.fecha_caducidad }}">
+                            <div class="form-text">
+                                Fecha de caducidad del lote
+                            </div>
+                        </div>
+
+                        <!-- Estado -->
+                        {% if producto %}
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3 mt-3">
+                                <i class="fas fa-toggle-on me-2"></i>
+                                Estado
+                            </h6>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="activo" 
+                                       name="activo" 
+                                       value="true"
+                                       {% if producto.activo %}checked{% endif %}>
+                                <label class="form-check-label" for="activo">
+                                    Producto activo
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Desmarcar para desactivar el producto
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">&nbsp;</label>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-search me-1"></i>Buscar
-                            </button>
-                            <a href="{{ url_for('productos.lista_productos') }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="fas fa-times me-1"></i>Limpiar
-                            </a>
+
+                    <!-- Botones de Acción -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    {% if producto %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Producto registrado el {{ producto.fecha_creacion.strftime('%d/%m/%Y') }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('productos.lista_productos') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-1"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas {% if producto %}fa-save{% else %}fa-plus{% endif %} me-1"></i>
+                                        {% if producto %}Actualizar Producto{% else %}Crear Producto{% endif %}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Grid de Productos -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
+        {% if producto %}
+        <!-- Vista previa del producto -->
+        <div class="card mt-4">
             <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Productos</h5>
-                    <span class="badge bg-primary">{{ productos.total }} productos</span>
-                </div>
+                <h6 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Vista Previa
+                </h6>
             </div>
             <div class="card-body">
-                {% if productos.items %}
                 <div class="row">
-                    {% for producto in productos.items %}
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card h-100 producto-card d-flex flex-column">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span class="badge bg-primary">{{ producto.codigo }}</span>
-                                {% if producto.categoria %}
-                                <span class="badge bg-secondary">{{ producto.categoria }}</span>
-                                {% endif %}
+                    <div class="col-md-4 text-center">
+                        {% if producto.imagen_url %}
+                        <img src="{{ producto.imagen_url }}" 
+                             alt="{{ producto.nombre }}" 
+                             class="img-fluid rounded"
+                             style="max-height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="fas fa-pills fa-3x text-muted"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h5>{{ producto.nombre }}</h5>
+                        <p class="text-muted">{{ producto.descripcion or 'Sin descripción' }}</p>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Precio:</strong> {{ "%.2f"|format(producto.precio) }}€<br>
+                                <strong>IVA:</strong> {{ producto.iva_porcentaje or 21 }}%<br>
+                                <strong>Recargo Equiv.:</strong> {{ producto.recargo_equivalencia or 0 }}%<br>
+                                <strong>Categoría:</strong> {{ producto.categoria or 'Sin categoría' }}<br>
+                                <strong>Stock:</strong> {{ producto.stock }} unidades<br>
+                                <strong>Stock Mínimo:</strong> {{ producto.stock_minimo }} unidades
                             </div>
-                            
-                            <div class="card-body d-flex flex-column">
-                                <!-- Imagen del producto -->
-                                <div class="text-center mb-3">
-                                    {% if producto.imagen_url %}
-                                    <img src="{{ producto.imagen_url }}" 
-                                         alt="{{ producto.nombre }}" 
-                                         class="img-fluid rounded producto-imagen"
-                                         style="max-height: 120px; object-fit: cover;">
-                                    {% else %}
-                                    <div class="bg-light rounded d-flex align-items-center justify-content-center producto-imagen-placeholder" style="height: 120px;">
-                                        <i class="fas fa-pills fa-2x text-muted"></i>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Información del producto -->
-                                <h6 class="card-title text-truncate" title="{{ producto.nombre }}">
-                                    {{ producto.nombre }}
-                                </h6>
-                                
-                                <!-- Información del proveedor y marca -->
-                                {% if producto.marca or producto.nombre_proveedor %}
-                                <div class="mb-2">
-                                    {% if producto.marca %}
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-tag me-1"></i>{{ producto.marca }}
-                                    </small>
-                                    {% endif %}
-                                    {% if producto.nombre_proveedor %}
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-truck me-1"></i>{{ producto.nombre_proveedor }}
-                                    </small>
-                                    {% endif %}
-                                </div>
+                            <div class="col-md-6">
+                                {% if producto.codigo_nacional %}
+                                <strong>Código Nacional:</strong> {{ producto.codigo_nacional }}<br>
                                 {% endif %}
-                                
-                                {% if producto.descripcion %}
-                                <p class="card-text text-muted small">
-                                    {{ producto.descripcion[:80] }}{% if producto.descripcion|length > 80 %}...{% endif %}
-                                </p>
+                                {% if producto.num_referencia %}
+                                <strong>Referencia:</strong> {{ producto.num_referencia }}<br>
                                 {% endif %}
-                                
-                                <!-- Precio e IVA -->
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="h6 mb-0 text-success">
-                                        {{ "%.2f"|format(producto.precio) }}€
-                                    </span>
-                                    <span class="badge bg-info">
-                                        IVA {{ producto.iva_porcentaje }}%
-                                    </span>
-                                </div>
-                                
-                                <!-- Stock -->
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="border-end">
-                                            <div class="fw-bold {% if producto.stock <= producto.stock_minimo %}text-danger{% elif producto.stock <= (producto.stock_minimo * 2) %}text-warning{% else %}text-success{% endif %}">
-                                                {{ producto.stock }}
-                                            </div>
-                                            <small class="text-muted">Stock</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="fw-bold text-info">
-                                            {{ producto.stock_minimo }}
-                                        </div>
-                                        <small class="text-muted">Mínimo</small>
-                                    </div>
-                                </div>
-                                
-                                <!-- Alertas -->
-                                {% if producto.stock == 0 %}
-                                <div class="alert alert-danger mt-2 mb-3 py-1 px-2">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>
-                                    <small>Agotado</small>
-                                </div>
-                                {% elif producto.stock <= producto.stock_minimo %}
-                                <div class="alert alert-warning mt-2 mb-3 py-1 px-2">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>
-                                    <small>Stock bajo</small>
-                                </div>
+                                {% if producto.nombre_proveedor %}
+                                <strong>Proveedor:</strong> {{ producto.nombre_proveedor }}<br>
                                 {% endif %}
-                                
-                                <!-- Información adicional que se adapta al espacio disponible -->
-                                <div class="mb-3 flex-grow-1">
-                                    {% if producto.codigo_nacional %}
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-barcode me-1"></i>CN: {{ producto.codigo_nacional }}
-                                    </small>
-                                    {% endif %}
-                                    {% if producto.num_referencia %}
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-hashtag me-1"></i>Ref: {{ producto.num_referencia }}
-                                    </small>
-                                    {% endif %}
-                                    {% if producto.lote %}
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-tag me-1"></i>Lote: {{ producto.lote }}
-                                    </small>
-                                    {% endif %}
-                                    {% if producto.fecha_caducidad %}
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        Caduca: {{ producto.fecha_caducidad.strftime('%d/%m/%Y') }}
-                                    </small>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Botones de acción fijos en la parte inferior -->
-                                <div class="mt-auto">
-                                    <div class="d-grid gap-1">
-                                        <button type="button" 
-                                                class="btn btn-outline-info btn-sm btn-ver-detalle-producto"
-                                                data-producto-id="{{ producto.id }}"
-                                                data-bs-toggle="tooltip" 
-                                                title="Ver detalles completos">
-                                            <i class="fas fa-eye me-1"></i>Ver Detalles
-                                        </button>
-                                        <a href="{{ url_for('productos.editar_producto', id=producto.id) }}" 
-                                           class="btn btn-outline-warning btn-sm"
-                                           data-bs-toggle="tooltip" 
-                                           title="Editar producto">
-                                            <i class="fas fa-edit me-1"></i>Editar
-                                        </a>
-                                        <button type="button" 
-                                                class="btn btn-outline-danger btn-sm btn-eliminar-producto"
-                                                data-producto-id="{{ producto.id }}"
-                                                data-producto-nombre="{{ producto.nombre }}"
-                                                data-bs-toggle="tooltip" 
-                                                title="Desactivar producto">
-                                            <i class="fas fa-trash me-1"></i>Eliminar
-                                        </button>
-                                    </div>
-                                </div>
+                                {% if producto.marca %}
+                                <strong>Marca:</strong> {{ producto.marca }}<br>
+                                {% endif %}
+                                {% if producto.lote %}
+                                <strong>Lote:</strong> {{ producto.lote }}<br>
+                                {% endif %}
+                                {% if producto.fecha_caducidad %}
+                                <strong>Caducidad:</strong> {{ producto.fecha_caducidad.strftime('%d/%m/%Y') }}<br>
+                                {% endif %}
+                                <strong>Estado:</strong> 
+                                <span class="badge {% if producto.activo %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if producto.activo %}Activo{% else %}Inactivo{% endif %}
+                                </span>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <div class="mb-3">
-                        <i class="fas fa-box fa-3x text-muted"></i>
-                    </div>
-                    <h5 class="text-muted">No hay productos registrados</h5>
-                    {% if search or categoria or stock_bajo %}
-                    <p class="text-muted">No se encontraron productos con los filtros aplicados</p>
-                    <a href="{{ url_for('productos.lista_productos') }}" class="btn btn-outline-primary">
-                        Ver todos los productos
-                    </a>
-                    {% else %}
-                    <p class="text-muted">Comienza agregando tu primer producto</p>
-                    <a href="{{ url_for('productos.nuevo_producto') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i>Crear Primer Producto
-                    </a>
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
-            
-            <!-- Paginación -->
-            {% if productos.pages > 1 %}
-            <div class="card-footer">
-                <nav aria-label="Paginación de productos">
-                    <ul class="pagination justify-content-center mb-0">
-                        {% if productos.has_prev %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('productos.lista_productos', page=productos.prev_num, search=search, categoria=categoria, stock_bajo=stock_bajo) }}">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for page_num in productos.iter_pages() %}
-                        {% if page_num %}
-                        {% if page_num != productos.page %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('productos.lista_productos', page=page_num, search=search, categoria=categoria, stock_bajo=stock_bajo) }}">
-                                {{ page_num }}
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ page_num }}</span>
-                        </li>
-                        {% endif %}
-                        {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
-                        </li>
-                        {% endif %}
-                        {% endfor %}
-                        
-                        {% if productos.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('productos.lista_productos', page=productos.next_num, search=search, categoria=categoria, stock_bajo=stock_bajo) }}">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<!-- Modal para detalles del producto -->
-<div class="modal fade" id="modalDetalleProducto" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-box me-2"></i>
-                    Detalles del Producto
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="detalleProductoContent">
-                <!-- El contenido se carga dinámicamente -->
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

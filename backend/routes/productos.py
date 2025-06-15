@@ -7,8 +7,8 @@
 @details Este módulo contiene todas las rutas relacionadas con la gestión
          de productos: crear, listar, editar, eliminar y control de stock.
 @author José David Sánchez Fernández
-@version 1.2
-@date 2025-06-10
+@version 1.3
+@date 2025-06-13
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -149,7 +149,7 @@ def api_crear_producto():
     @brief API para crear un nuevo producto
     @details Procesa los datos del formulario y crea un producto en la base de datos
     @return JSON con resultado de la operación
-    @version 1.1
+    @version 1.2
     """
     try:
         data = request.get_json()
@@ -197,6 +197,22 @@ def api_crear_producto():
                     'message': 'El IVA debe ser un número válido'
                 }), 400
         
+        # Validar recargo de equivalencia
+        recargo_equivalencia = Decimal('0.0')  # Por defecto 0%
+        if data.get('recargo_equivalencia'):
+            try:
+                recargo_equivalencia = Decimal(str(data['recargo_equivalencia']))
+                if recargo_equivalencia not in [Decimal('0'), Decimal('0.5'), Decimal('1.4'), Decimal('5.2')]:
+                    return jsonify({
+                        'success': False,
+                        'message': 'El recargo de equivalencia debe ser 0%, 0.5%, 1.4% o 5.2%'
+                    }), 400
+            except (ValueError, TypeError):
+                return jsonify({
+                    'success': False,
+                    'message': 'El recargo de equivalencia debe ser un número válido'
+                }), 400
+        
         # Validar stock
         try:
             stock = int(data.get('stock', 0))
@@ -237,12 +253,14 @@ def api_crear_producto():
             fecha_caducidad=fecha_caducidad,
             categoria=data.get('categoria', '').strip(),
             imagen_url=data.get('imagen_url', '').strip(),
-            # Nuevos campos
+            # Campos de identificación
             codigo_nacional=data.get('codigo_nacional', '').strip(),
             num_referencia=data.get('num_referencia', '').strip(),
             nombre_proveedor=data.get('nombre_proveedor', '').strip(),
             marca=data.get('marca', '').strip(),
-            iva_porcentaje=iva_porcentaje
+            # Campos fiscales
+            iva_porcentaje=iva_porcentaje,
+            recargo_equivalencia=recargo_equivalencia
         )
         
         print(f"✅ Producto creado en memoria: {producto}")  # Debug log
@@ -272,7 +290,7 @@ def api_actualizar_producto(id):
     @brief API para actualizar un producto existente
     @param id ID del producto a actualizar
     @return JSON con resultado de la operación
-    @version 1.1
+    @version 1.2
     """
     try:
         producto = Producto.query.get_or_404(id)
@@ -324,6 +342,22 @@ def api_actualizar_producto(id):
                     'message': 'El IVA debe ser un número válido'
                 }), 400
         
+        # Validar recargo de equivalencia
+        recargo_equivalencia = Decimal('0.0')  # Por defecto 0%
+        if data.get('recargo_equivalencia'):
+            try:
+                recargo_equivalencia = Decimal(str(data['recargo_equivalencia']))
+                if recargo_equivalencia not in [Decimal('0'), Decimal('0.5'), Decimal('1.4'), Decimal('5.2')]:
+                    return jsonify({
+                        'success': False,
+                        'message': 'El recargo de equivalencia debe ser 0%, 0.5%, 1.4% o 5.2%'
+                    }), 400
+            except (ValueError, TypeError):
+                return jsonify({
+                    'success': False,
+                    'message': 'El recargo de equivalencia debe ser un número válido'
+                }), 400
+        
         # Validar stock
         try:
             stock = int(data.get('stock', 0))
@@ -360,12 +394,15 @@ def api_actualizar_producto(id):
         producto.imagen_url = data.get('imagen_url', '').strip()
         producto.activo = data.get('activo', True)
         
-        # Actualizar nuevos campos
+        # Actualizar campos de identificación
         producto.codigo_nacional = data.get('codigo_nacional', '').strip()
         producto.num_referencia = data.get('num_referencia', '').strip()
         producto.nombre_proveedor = data.get('nombre_proveedor', '').strip()
         producto.marca = data.get('marca', '').strip()
+        
+        # Actualizar campos fiscales
         producto.iva_porcentaje = iva_porcentaje
+        producto.recargo_equivalencia = recargo_equivalencia
         
         db.session.commit()
         

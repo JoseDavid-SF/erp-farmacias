@@ -7,8 +7,8 @@
 @details Este módulo contiene todas las rutas relacionadas con la gestión
          de pedidos: crear, listar, editar, eliminar y control de estado.
 @author José David Sánchez Fernández
-@version 1.1
-@date 2025-06-10
+@version 1.2
+@date 2025-06-14
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -153,7 +153,7 @@ def api_crear_pedido():
     @brief API para crear un nuevo pedido
     @details Procesa los datos del formulario y crea un pedido en la base de datos
     @return JSON con resultado de la operación
-    @version 1.1
+    @version 1.2
     """
     try:
         data = request.get_json()
@@ -183,13 +183,12 @@ def api_crear_pedido():
         # Generar número de pedido único
         numero_pedido = generar_numero_pedido()
         
-        # Crear nuevo pedido
+        # Crear nuevo pedido - SIN productos_pendientes
         pedido = Pedido(
             numero_pedido=numero_pedido,
             cliente_id=data['cliente_id'],
             estado=data.get('estado', 'pendiente'),
-            observaciones=data.get('observaciones', '').strip(),
-            productos_pendientes=data.get('productos_pendientes', '')
+            observaciones=data.get('observaciones', '').strip()
         )
         
         db.session.add(pedido)
@@ -261,7 +260,7 @@ def api_actualizar_pedido(id):
     @brief API para actualizar un pedido existente
     @param id ID del pedido a actualizar
     @return JSON con resultado de la operación
-    @version 1.0
+    @version 1.1
     """
     try:
         pedido = Pedido.query.get_or_404(id)
@@ -270,7 +269,6 @@ def api_actualizar_pedido(id):
         # Solo permitir actualizar ciertos campos
         pedido.estado = data.get('estado', pedido.estado)
         pedido.observaciones = data.get('observaciones', pedido.observaciones)
-        pedido.productos_pendientes = data.get('productos_pendientes', pedido.productos_pendientes)
         
         # Recalcular totales
         pedido.calcular_totales()

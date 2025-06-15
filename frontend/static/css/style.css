@@ -394,3 +394,54 @@ body {
         flex-direction: column;
     }
 }
+
+/* ========================================
+   NUEVOS ESTILOS PARA IVA Y RECARGO
+   ======================================== */
+
+/* Estilos específicos para desglose de totales en lista de pedidos */
+.desglose-totales {
+    min-width: 140px;
+}
+
+.desglose-totales .small {
+    line-height: 1.3;
+}
+
+/* Información de IVA y Recargo en formulario */
+.iva-recargo-info {
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+/* Badges pequeños para porcentajes */
+.badge-porcentaje {
+    font-size: 0.7rem !important;
+    padding: 0.2rem 0.4rem;
+    font-weight: 500;
+}
+
+/* Totales destacados en formularios */
+.totales-destacados .fs-4 {
+    font-size: 1.25rem !important;
+}
+
+.totales-destacados .fs-5 {
+    font-size: 1.1rem !important;
+}
+
+/* Responsive para desglose de totales */
+@media (max-width: 768px) {
+    .desglose-totales {
+        min-width: auto;
+    }
+    
+    .desglose-totales .small {
+        font-size: 0.75rem;
+    }
+    
+    .badge-porcentaje {
+        font-size: 0.65rem !important;
+        padding: 0.15rem 0.3rem;
+    }
+}

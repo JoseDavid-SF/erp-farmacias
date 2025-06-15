@@ -4,8 +4,8 @@
  * @details Funciones para manejar las operaciones CRUD de productos,
  *          búsquedas, validaciones y control de stock.
  * @author José David Sánchez Fernández
- * @version 1.5
- * @date 2025-06-10
+ * @version 1.6
+ * @date 2025-06-14
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
 
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /**
  * @brief Inicializa todas las funcionalidades del módulo de productos
- * @version 1.4
+ * @version 1.5
  */
 function inicializarProductos() {
     // Detectar si estamos en la página de lista o formulario
@@ -39,10 +39,62 @@ function inicializarProductos() {
     // Configurar validaciones de formulario si estamos en el formulario
     if (esFormulario) {
         configurarFormularioProducto();
+        configurarCalculoRecargoEquivalencia();
     }
     
     // Verificar si hay que mostrar detalles automáticamente
     verificarParametroVerProducto();
+}
+
+/**
+ * @brief Configura el cálculo automático del recargo de equivalencia
+ * @version 1.0
+ */
+function configurarCalculoRecargoEquivalencia() {
+    const ivaSelect = document.getElementById('iva_porcentaje');
+    const recargoInput = document.getElementById('recargo_equivalencia');
+    
+    if (!ivaSelect || !recargoInput) {
+        console.log('⚠️ No se encontraron campos de IVA o recargo de equivalencia');
+        return;
+    }
+    
+    console.log('✅ Configurando cálculo automático de recargo de equivalencia');
+    
+    /**
+     * @brief Calcula el recargo de equivalencia basado en el IVA seleccionado
+     */
+    function calcularRecargo() {
+        const iva = parseFloat(ivaSelect.value);
+        let recargo = 0;
+        
+        // Tabla de correspondencia IVA - Recargo de Equivalencia
+        switch(iva) {
+            case 4:
+                recargo = 0.5;
+                break;
+            case 10:
+                recargo = 1.4;
+                break;
+            case 21:
+                recargo = 5.2;
+                break;
+            default:
+                recargo = 0;
+        }
+        
+        recargoInput.value = recargo;
+        
+        console.log(`📊 IVA ${iva}% → Recargo ${recargo}%`);
+    }
+    
+    // Calcular recargo al cambiar el IVA
+    ivaSelect.addEventListener('change', calcularRecargo);
+    
+    // Calcular recargo inicial si hay un valor preseleccionado
+    if (ivaSelect.value) {
+        calcularRecargo();
+    }
 }
 
 /**
@@ -511,7 +563,7 @@ function agregarAPedido(productoId) {
 
 /**
  * @brief Configura las validaciones del formulario de producto
- * @version 1.2
+ * @version 1.3
  */
 function configurarFormularioProducto() {
     const form = document.getElementById('formProducto');
@@ -552,7 +604,7 @@ function configurarFormularioProducto() {
     });
     
     // Validación en tiempo real para campos básicos
-    const campos = ['codigo', 'nombre', 'precio', 'stock', 'stock_minimo'];
+    const campos = ['codigo', 'nombre', 'precio', 'stock', 'stock_minimo', 'iva_porcentaje'];
     campos.forEach(campo => {
         const input = document.getElementById(campo);
         if (input) {
@@ -575,7 +627,7 @@ function configurarFormularioProducto() {
 /**
  * @brief Valida todo el formulario de producto
  * @return bool True si es válido, false en caso contrario
- * @version 1.1
+ * @version 1.2
  */
 function validarFormularioProducto() {
     let esValido = true;
@@ -584,14 +636,24 @@ function validarFormularioProducto() {
     if (!validarCampoProducto('codigo')) esValido = false;
     if (!validarCampoProducto('nombre')) esValido = false;
     if (!validarCampoProducto('precio')) esValido = false;
+    if (!validarCampoProducto('iva_porcentaje')) esValido = false;
     
     // Validar campos numéricos
     if (!validarCampoProducto('stock')) esValido = false;
     if (!validarCampoProducto('stock_minimo')) esValido = false;
     
     // Validar nuevos campos opcionales
-    const codigoNacional = document.getElementById('codigo_nacional').value;
+    const codigoNacional = document.getElementById('codigo_nacional')?.value;
     if (codigoNacional && !validarCampoNuevoProducto('codigo_nacional')) esValido = false;
+    
+    const numReferencia = document.getElementById('num_referencia')?.value;
+    if (numReferencia && !validarCampoNuevoProducto('num_referencia')) esValido = false;
+    
+    const nombreProveedor = document.getElementById('nombre_proveedor')?.value;
+    if (nombreProveedor && !validarCampoNuevoProducto('nombre_proveedor')) esValido = false;
+    
+    const marca = document.getElementById('marca')?.value;
+    if (marca && !validarCampoNuevoProducto('marca')) esValido = false;
     
     return esValido;
 }
@@ -600,7 +662,7 @@ function validarFormularioProducto() {
  * @brief Valida un campo específico del formulario
  * @param campo Nombre del campo a validar
  * @return bool True si es válido, false en caso contrario
- * @version 1.0
+ * @version 1.1
  */
 function validarCampoProducto(campo) {
     const input = document.getElementById(campo);
@@ -639,6 +701,18 @@ function validarCampoProducto(campo) {
             const precio = parseFloat(valor);
             if (isNaN(precio) || precio < 0) {
                 mostrarErrorCampoProducto(campo, 'El precio debe ser un número mayor o igual a 0');
+                return false;
+            }
+            break;
+            
+        case 'iva_porcentaje':
+            if (!valor) {
+                mostrarErrorCampoProducto(campo, 'El IVA es obligatorio');
+                return false;
+            }
+            const iva = parseFloat(valor);
+            if (![4, 10, 21].includes(iva)) {
+                mostrarErrorCampoProducto(campo, 'El IVA debe ser 4%, 10% o 21%');
                 return false;
             }
             break;
@@ -739,7 +813,7 @@ function limpiarErrorProducto(campo) {
 
 /**
  * @brief Guarda los datos del producto (crear o actualizar)
- * @version 1.1
+ * @version 1.2
  */
 async function guardarProducto() {
     const form = document.getElementById('formProducto');
@@ -767,6 +841,12 @@ async function guardarProducto() {
         const ivaSelect = form.querySelector('#iva_porcentaje');
         if (ivaSelect && ivaSelect.value) {
             data.iva_porcentaje = parseFloat(ivaSelect.value);
+        }
+        
+        // Validar y convertir recargo de equivalencia
+        const recargoInput = form.querySelector('#recargo_equivalencia');
+        if (recargoInput && recargoInput.value) {
+            data.recargo_equivalencia = parseFloat(recargoInput.value);
         }
         
         console.log('📤 Datos de producto a enviar:', data);

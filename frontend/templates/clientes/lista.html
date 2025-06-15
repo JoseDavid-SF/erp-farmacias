@@ -84,7 +84,6 @@
                                 <th>Farmacia</th>
                                 <th>Información Fiscal</th>
                                 <th>Contacto</th>
-                                <th>Recargo Equiv.</th>
                                 <th>Estado</th>
                                 <th>Última Visita</th>
                                 <th>Acciones</th>
@@ -135,13 +134,6 @@
                                             {{ cliente.email }}
                                         </a>
                                     </div>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if cliente.recargo_equivalencia and cliente.recargo_equivalencia > 0 %}
-                                    <span class="badge bg-info">{{ cliente.recargo_equivalencia }}%</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Sin recargo</span>
                                     {% endif %}
                                 </td>
                                 <td>

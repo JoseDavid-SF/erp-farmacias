@@ -4,8 +4,8 @@
  * @details Funciones para manejar las operaciones CRUD de clientes,
  *          búsquedas, validaciones y modales.
  * @author José David Sánchez Fernández
- * @version 1.4
- * @date 2025-06-10
+ * @version 1.6
+ * @date 2025-06-14
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
 
@@ -53,6 +53,9 @@ function inicializarClientes() {
     if (document.getElementById('formCliente')) {
         configurarFormularioCliente();
     }
+    
+    // Cargar estadísticas del cliente si estamos en la página de edición
+    cargarEstadisticasCliente();
 }
 
 /**
@@ -106,22 +109,33 @@ function configurarBusqueda() {
 }
 
 /**
- * @brief Muestra los detalles de un cliente en un modal
+ * @brief Muestra los detalles de un cliente en un modal (con manejo de errores mejorado)
  * @param clienteId ID del cliente a mostrar
- * @version 1.2
+ * @version 1.3
  */
 async function verDetalleCliente(clienteId) {
-    const modal = new bootstrap.Modal(document.getElementById('modalDetalleCliente'));
-    const contenido = document.getElementById('detalleClienteContent');
+    // Verificar si existe el modal, si no, crear uno temporal o usar alert
+    let modal;
+    let contenido;
     
-    // Mostrar modal con loading
-    modal.show();
-    contenido.innerHTML = `
-        <div class="text-center py-4">
-            <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
-            <p class="mt-2">Cargando información del cliente...</p>
-        </div>
-    `;
+    const modalElement = document.getElementById('modalDetalleCliente');
+    if (modalElement) {
+        modal = new bootstrap.Modal(modalElement);
+        contenido = document.getElementById('detalleClienteContent');
+        
+        // Mostrar modal con loading
+        modal.show();
+        contenido.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                <p class="mt-2">Cargando información del cliente...</p>
+            </div>
+        `;
+    } else {
+        console.log('⚠️ Modal no encontrado, redirigiendo a editar cliente');
+        window.location.href = `/clientes/editar/${clienteId}`;
+        return;
+    }
     
     try {
         const response = await fetch(`/clientes/api/detalle/${clienteId}`);
@@ -134,26 +148,44 @@ async function verDetalleCliente(clienteId) {
         }
     } catch (error) {
         console.error('Error:', error);
-        contenido.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-exclamation-circle fa-2x text-danger"></i>
-                <p class="mt-2 text-danger">Error al cargar la información del cliente</p>
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        `;
+        if (contenido) {
+            contenido.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-circle fa-2x text-danger"></i>
+                    <p class="mt-2 text-danger">Error al cargar la información del cliente</p>
+                    <p class="small text-muted">${error.message}</p>
+                    <div class="mt-3">
+                        <button class="btn btn-secondary me-2" data-bs-dismiss="modal">Cerrar</button>
+                        <a href="/clientes/editar/${clienteId}" class="btn btn-warning">
+                            <i class="fas fa-edit me-1"></i>Editar Cliente
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else {
+            showNotification('Error al cargar cliente. Redirigiendo...', 'danger');
+            setTimeout(() => {
+                window.location.href = `/clientes/editar/${clienteId}`;
+            }, 2000);
+        }
     }
 }
 
 /**
- * @brief Muestra los detalles del cliente en el modal incluyendo nuevos campos
+ * @brief Muestra los detalles del cliente en el modal (SIN recargo de equivalencia)
  * @param data Datos del cliente obtenidos de la API
- * @version 1.2
+ * @version 1.4
  */
 function mostrarDetalleCliente(data) {
     const cliente = data.cliente;
     const estadisticas = data.estadisticas || {};
     
     const contenido = document.getElementById('detalleClienteContent');
+    if (!contenido) {
+        console.error('❌ No se encontró el contenedor del modal');
+        return;
+    }
+    
     contenido.innerHTML = `
         <div class="row">
             <div class="col-md-6">
@@ -164,11 +196,11 @@ function mostrarDetalleCliente(data) {
                 <table class="table table-sm">
                     <tr>
                         <td class="fw-semibold">Código:</td>
-                        <td><span class="badge bg-primary">${cliente.codigo}</span></td>
+                        <td><span class="badge bg-primary">${cliente.codigo || 'N/A'}</span></td>
                     </tr>
                     <tr>
                         <td class="fw-semibold">Nombre:</td>
-                        <td>${cliente.nombre}</td>
+                        <td>${cliente.nombre || 'N/A'}</td>
                     </tr>
                     ${cliente.nombre_fiscal && cliente.nombre_fiscal !== cliente.nombre ? `
                     <tr>
@@ -233,15 +265,6 @@ function mostrarDetalleCliente(data) {
                             `<code class="small">${cliente.cuenta_bancaria}</code>` : 
                             '<em class="text-muted">No especificada</em>'
                         }</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Recargo Equiv.:</td>
-                        <td>
-                            ${cliente.recargo_equivalencia > 0 ? 
-                              `<span class="badge bg-info">${cliente.recargo_equivalencia}%</span>` : 
-                              '<span class="badge bg-secondary">Sin recargo</span>'
-                            }
-                        </td>
                     </tr>
                 </table>
                 
@@ -347,7 +370,7 @@ async function eliminarCliente(clienteId, nombreCliente) {
 
 /**
  * @brief Configura las validaciones del formulario de cliente
- * @version 1.2
+ * @version 1.3
  */
 function configurarFormularioCliente() {
     const form = document.getElementById('formCliente');
@@ -380,12 +403,12 @@ function configurarFormularioCliente() {
         }
     });
     
-    // Validación en tiempo real para nuevos campos
-    const camposNuevos = ['cif', 'nombre_fiscal', 'contacto', 'cuenta_bancaria'];
-    camposNuevos.forEach(campo => {
+    // Validación en tiempo real para campos fiscales
+    const camposFiscales = ['cif', 'nombre_fiscal', 'contacto', 'cuenta_bancaria'];
+    camposFiscales.forEach(campo => {
         const input = document.getElementById(campo);
         if (input) {
-            input.addEventListener('blur', () => validarCampoNuevo(campo));
+            input.addEventListener('blur', () => validarCampoFiscal(campo));
             input.addEventListener('input', () => limpiarError(campo));
         }
     });
@@ -394,7 +417,7 @@ function configurarFormularioCliente() {
 /**
  * @brief Valida todo el formulario de cliente
  * @return bool True si es válido, false en caso contrario
- * @version 1.2
+ * @version 1.3
  */
 function validarFormularioCliente() {
     let esValido = true;
@@ -424,17 +447,15 @@ function validarFormularioCliente() {
         esValido = false;
     }
     
-    // Validar nuevos campos opcionales
+    // Validar campos fiscales opcionales
     const cif = document.getElementById('cif').value;
-    console.log('🔍 Validando CIF:', cif);
-    if (cif && !validarCampoNuevo('cif')) {
+    if (cif && !validarCampoFiscal('cif')) {
         console.log('❌ Error en CIF');
         esValido = false;
     }
     
     const cuentaBancaria = document.getElementById('cuenta_bancaria').value;
-    console.log('🔍 Validando cuenta bancaria:', cuentaBancaria);
-    if (cuentaBancaria && !validarCampoNuevo('cuenta_bancaria')) {
+    if (cuentaBancaria && !validarCampoFiscal('cuenta_bancaria')) {
         console.log('❌ Error en cuenta bancaria');
         esValido = false;
     }
@@ -498,12 +519,12 @@ function validarCampo(campo) {
 }
 
 /**
- * @brief Valida los nuevos campos del formulario
+ * @brief Valida los campos fiscales del formulario
  * @param campo Nombre del campo a validar
  * @return bool True si es válido, false en caso contrario
  * @version 1.1
  */
-function validarCampoNuevo(campo) {
+function validarCampoFiscal(campo) {
     const input = document.getElementById(campo);
     if (!input) return true;
     
@@ -582,8 +603,8 @@ function limpiarError(campo) {
 }
 
 /**
- * @brief Guarda los datos del cliente (crear o actualizar)
- * @version 1.2
+ * @brief Guarda los datos del cliente (crear o actualizar) - SIN recargo de equivalencia
+ * @version 1.4
  */
 async function guardarCliente() {
     const form = document.getElementById('formCliente');
@@ -595,25 +616,26 @@ async function guardarCliente() {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
     
     try {
-        // Obtener datos del formulario
+        // Obtener datos del formulario - SOLO campos que existen en Cliente
         const formData = new FormData(form);
         const data = {};
         
-        // Convertir FormData a objeto
+        // Convertir FormData a objeto (SOLO campos válidos de Cliente)
+        const camposValidos = [
+            'codigo', 'nombre', 'direccion', 'telefono', 'email', 'notas',
+            'nombre_fiscal', 'cif', 'contacto', 'cuenta_bancaria'
+        ];
+        
         for (let [key, value] of formData.entries()) {
-            data[key] = value;
+            if (camposValidos.includes(key)) {
+                data[key] = value;
+            }
         }
         
         // Manejar checkbox de activo
         data.activo = form.querySelector('#activo') ? form.querySelector('#activo').checked : true;
         
-        // Validar y convertir recargo de equivalencia
-        const recargoSelect = form.querySelector('#recargo_equivalencia');
-        if (recargoSelect && recargoSelect.value) {
-            data.recargo_equivalencia = parseFloat(recargoSelect.value);
-        }
-        
-        console.log('📤 Datos a enviar:', data);
+        console.log('📤 Datos a enviar (filtrados):', data);
         
         // Determinar si es creación o actualización
         const clienteId = document.getElementById('cliente_id');
@@ -652,7 +674,7 @@ async function guardarCliente() {
         
     } catch (error) {
         console.error('❌ Error en guardarCliente:', error);
-        showNotification('Error al guardar cliente', 'danger');
+        showNotification('Error al guardar cliente: ' + error.message, 'danger');
     } finally {
         // Restaurar botón
         submitBtn.disabled = false;
@@ -756,6 +778,41 @@ function isValidIBAN(iban) {
     const ibanRegex = /^ES[0-9]{22}$/;
     
     return ibanRegex.test(cleanIban);
+}
+
+/**
+ * @brief Carga las estadísticas del cliente en la página de edición
+ * @version 1.0
+ */
+function cargarEstadisticasCliente() {
+    const cardCliente = document.querySelector('[data-cliente-id]');
+    if (!cardCliente) return; // No estamos en página de edición de cliente
+    
+    const clienteId = cardCliente.getAttribute('data-cliente-id');
+    if (!clienteId) return;
+    
+    // Cargar estadísticas de forma asíncrona
+    fetch(`/clientes/api/detalle/${clienteId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.estadisticas) {
+                const totalPedidosEl = document.getElementById('total-pedidos-cliente');
+                if (totalPedidosEl) {
+                    totalPedidosEl.textContent = data.estadisticas.total_pedidos || 0;
+                }
+                
+                // También actualizar la fecha si está disponible
+                const fechaUltimaVisitaEl = document.getElementById('fecha-ultima-visita');
+                if (fechaUltimaVisitaEl && data.estadisticas.fecha_ultimo_pedido) {
+                    const fecha = new Date(data.estadisticas.fecha_ultimo_pedido);
+                    fechaUltimaVisitaEl.textContent = fecha.toLocaleDateString('es-ES');
+                }
+            }
+        })
+        .catch(error => {
+            console.log('Info: No se pudieron cargar las estadísticas del cliente');
+            // Mantener valores por defecto, no mostrar error al usuario
+        });
 }
 
 /**
