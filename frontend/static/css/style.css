@@ -368,6 +368,93 @@ body {
     border-radius: 0.5rem;
 }
 
+/* ========================================
+   ESTILOS PARA PRODUCTOS DESCONTINUADOS
+   ======================================== */
+
+/* Tarjeta de producto descontinuado */
+.producto-descontinuado {
+    opacity: 0.7;
+    position: relative;
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+.producto-descontinuado:hover {
+    opacity: 0.85;
+    transform: translateY(-2px); /* Menos movimiento que productos activos */
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1); /* Sombra más suave */
+}
+
+/* Título de producto descontinuado */
+.producto-descontinuado .card-title {
+    color: #6c757d !important;
+    text-decoration: line-through;
+}
+
+/* Precio de producto descontinuado */
+.producto-descontinuado .text-success {
+    color: #6c757d !important;
+    opacity: 0.8;
+}
+
+/* Badges en productos descontinuados */
+.producto-descontinuado .badge.bg-primary {
+    background-color: #6c757d !important;
+}
+
+.producto-descontinuado .badge.bg-secondary {
+    background-color: #adb5bd !important;
+}
+
+/* Stock en productos descontinuados */
+.producto-descontinuado .fw-bold {
+    color: #6c757d !important;
+    opacity: 0.8;
+}
+
+/* Imagen de producto descontinuado */
+.producto-descontinuado .producto-imagen,
+.producto-descontinuado .producto-imagen-placeholder {
+    filter: grayscale(50%) brightness(0.9);
+    opacity: 0.8;
+}
+
+.producto-descontinuado .producto-imagen:hover {
+    transform: none; /* Sin efecto hover en imágenes descontinuadas */
+}
+
+/* Botones en productos descontinuados */
+.producto-descontinuado .btn-outline-info,
+.producto-descontinuado .btn-outline-warning {
+    opacity: 0.8;
+}
+
+.producto-descontinuado .btn-outline-secondary.disabled {
+    opacity: 1; /* El botón "Descontinuado" debe ser visible */
+}
+
+/* Efecto adicional: pseudoelemento para marca visual */
+.producto-descontinuado::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    background-color: #6c757d;
+    border-radius: 50%;
+    opacity: 0.3;
+    z-index: 1;
+}
+
+/* Responsive para productos descontinuados */
+@media (max-width: 768px) {
+    .producto-descontinuado:hover {
+        transform: none; /* Sin efectos hover en móviles */
+    }
+}
+
 /* Estilos para elementos destacados */
 .text-highlight {
     background-color: rgba(255, 193, 7, 0.2);

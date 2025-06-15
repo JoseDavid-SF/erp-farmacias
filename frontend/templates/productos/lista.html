@@ -104,7 +104,7 @@
                 <div class="row">
                     {% for producto in productos.items %}
                     <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card h-100 producto-card d-flex flex-column">
+                        <div class="card h-100 producto-card d-flex flex-column{% if not producto.activo %} producto-descontinuado{% endif %}">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span class="badge bg-primary">{{ producto.codigo }}</span>
                                 {% if producto.categoria %}
@@ -164,7 +164,12 @@
                                 </div>
                                 
                                 <!-- Alertas -->
-                                {% if producto.stock == 0 %}
+                                {% if not producto.activo %}
+                                <div class="alert alert-secondary mt-2 mb-3 py-1 px-2">
+                                    <i class="fas fa-ban me-1"></i>
+                                    <small>Descontinuado</small>
+                                </div>
+                                {% elif producto.stock == 0 %}
                                 <div class="alert alert-danger mt-2 mb-3 py-1 px-2">
                                     <i class="fas fa-exclamation-triangle me-1"></i>
                                     <small>Agotado</small>
@@ -207,6 +212,7 @@
                                            title="Editar producto">
                                             <i class="fas fa-edit me-1"></i>Editar
                                         </a>
+                                        {% if producto.activo %}
                                         <button type="button" 
                                                 class="btn btn-outline-danger btn-sm btn-eliminar-producto"
                                                 data-producto-id="{{ producto.id }}"
@@ -215,6 +221,11 @@
                                                 title="Desactivar producto">
                                             <i class="fas fa-trash me-1"></i>Eliminar
                                         </button>
+                                        {% else %}
+                                        <span class="btn btn-outline-secondary btn-sm disabled">
+                                            <i class="fas fa-ban me-1"></i>Descontinuado
+                                        </span>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>

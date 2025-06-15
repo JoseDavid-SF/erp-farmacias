@@ -62,15 +62,15 @@ def lista_productos():
         if stock_bajo:
             query = query.filter(Producto.stock <= Producto.stock_minimo)
         
-        # Solo productos activos por defecto
-        query = query.filter(Producto.activo == True)
+        # Mostrar productos activos e inactivos
+        # query = query.filter(Producto.activo == True)  # Comentado para mostrar también descontinuados
         
         # Paginación
         productos = query.order_by(Producto.nombre).paginate(
             page=page, per_page=12, error_out=False
         )
         
-        # Obtener categorías para el filtro
+        # Obtener categorías para el filtro (solo de productos activos)
         try:
             categorias = db.session.query(Producto.categoria).filter(
                 Producto.categoria.isnot(None),

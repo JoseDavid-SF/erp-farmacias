@@ -280,6 +280,9 @@ function extraerDatosProductoDelDOM(card, productoId) {
         }
     }
     
+    // Verificar si el producto está descontinuado
+    const esDescontinuado = card.classList.contains('producto-descontinuado');
+    
     return {
         id: productoId,
         codigo: card.querySelector('.badge.bg-primary')?.textContent || '',
@@ -293,6 +296,7 @@ function extraerDatosProductoDelDOM(card, productoId) {
         fecha_caducidad: extraerFechaCaducidadDelDOM(card),
         imagen_url: card.querySelector('img')?.src || null,
         iva_porcentaje: extraerIVADelDOM(card),
+        activo: !esDescontinuado,
         // Nuevos campos
         codigo_nacional: codigoNacional,
         num_referencia: numReferencia,
@@ -371,6 +375,7 @@ function mostrarDetalleProducto(producto) {
     const stockMinimo = parseInt(producto.stock_minimo) || 0;
     const valorStock = (precio * stock).toFixed(2);
     const ivaPorc = parseFloat(producto.iva_porcentaje) || 21;
+    const activo = producto.activo !== false;
     
     // Calcular recargo de equivalencia
     let recargoEquiv = 0;
@@ -378,12 +383,16 @@ function mostrarDetalleProducto(producto) {
     else if (ivaPorc === 10) recargoEquiv = 1.4;
     else if (ivaPorc === 21) recargoEquiv = 5.2;
     
-    // Determinar estado del stock
+    // Determinar estado del producto
     let estadoStock = 'text-success';
     let textoStock = 'Stock suficiente';
     let badgeClass = 'bg-success';
     
-    if (stock === 0) {
+    if (!activo) {
+        estadoStock = 'text-secondary';
+        textoStock = 'Descontinuado';
+        badgeClass = 'bg-secondary';
+    } else if (stock === 0) {
         estadoStock = 'text-danger';
         textoStock = 'Agotado';
         badgeClass = 'bg-danger';
@@ -400,9 +409,9 @@ function mostrarDetalleProducto(producto) {
                     ${producto.imagen_url ? 
                       `<img src="${producto.imagen_url}" 
                            alt="${producto.nombre}" 
-                           class="img-fluid rounded shadow-sm"
+                           class="img-fluid rounded shadow-sm${!activo ? ' opacity-50' : ''}"
                            style="max-height: 200px; object-fit: cover;">` :
-                      `<div class="bg-light rounded d-flex align-items-center justify-content-center shadow-sm" 
+                      `<div class="bg-light rounded d-flex align-items-center justify-content-center shadow-sm${!activo ? ' opacity-50' : ''}" 
                            style="height: 200px;">
                          <i class="fas fa-pills fa-3x text-muted"></i>
                        </div>`
@@ -415,10 +424,14 @@ function mostrarDetalleProducto(producto) {
                       ''
                     }
                     <br><span class="badge bg-info mt-1">IVA ${ivaPorc}%</span>
+                    ${!activo ? 
+                      `<br><span class="badge bg-secondary mt-1"><i class="fas fa-ban me-1"></i>Descontinuado</span>` : 
+                      ''
+                    }
                 </div>
             </div>
             <div class="col-md-8">
-                <h4 class="text-primary mb-3">${producto.nombre}</h4>
+                <h4 class="text-primary mb-3${!activo ? ' opacity-75' : ''}">${producto.nombre}</h4>
                 
                 ${(producto.marca || producto.nombre_proveedor) ? 
                   `<div class="mb-3">
@@ -454,13 +467,13 @@ function mostrarDetalleProducto(producto) {
                 <div class="row mb-3">
                     <div class="col-6">
                         <h6 class="text-secondary">Precio (sin IVA)</h6>
-                        <h4 class="text-success">${precio.toFixed(2)}€</h4>
+                        <h4 class="text-success${!activo ? ' opacity-75' : ''}">${precio.toFixed(2)}€</h4>
                         <small class="text-muted">IVA ${ivaPorc}% | Rec. Equiv. ${recargoEquiv}%</small>
                     </div>
                     <div class="col-6">
                         <h6 class="text-secondary">Estado</h6>
                         <span class="badge ${badgeClass} fs-6">
-                            ${textoStock}
+                            ${!activo ? '<i class="fas fa-ban me-1"></i>' : ''}${textoStock}
                         </span>
                     </div>
                 </div>
@@ -517,9 +530,14 @@ function mostrarDetalleProducto(producto) {
                 <a href="/productos/editar/${producto.id}" class="btn btn-warning">
                     <i class="fas fa-edit me-1"></i>Editar Producto
                 </a>
-                <button class="btn btn-primary" onclick="agregarAPedido(${producto.id})">
-                    <i class="fas fa-plus me-1"></i>Agregar a Pedido
-                </button>
+                ${activo ? 
+                  `<button class="btn btn-primary" onclick="agregarAPedido(${producto.id})">
+                     <i class="fas fa-plus me-1"></i>Agregar a Pedido
+                   </button>` :
+                  `<button class="btn btn-secondary disabled" title="Producto descontinuado">
+                     <i class="fas fa-ban me-1"></i>Descontinuado
+                   </button>`
+                }
             </div>
         </div>
     `;
