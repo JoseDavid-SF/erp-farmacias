@@ -1,9 +1,9 @@
 # ERP Proveedor Autónomo de Farmacias
 
-**Versión:** 6.0  
+**Versión:** 9.0 
 **Autor:** José David Sánchez Fernández  
 **Empresa:** Mega Nevada S.L.  
-**Fecha:** 2025-06-06
+**Fecha:** 2025-06-16
 
 ## Descripción
 
@@ -11,13 +11,13 @@ Sistema ERP completo desarrollado específicamente para proveedores autónomos d
 
 ## Características Principales
 
-- ✅ **Gestión de Clientes:** Base de datos completa con historial de pedidos
-- ✅ **Catálogo de Productos:** Control de stock, precios y fechas de caducidad
-- ✅ **Sistema de Pedidos:** Generación automática con códigos familiares al usuario
-- ✅ **Facturación Automática:** Envío por email y generación de PDFs
-- ✅ **Control de Inventario:** Actualización en tiempo real
-- ✅ **Albaranes de Entrega:** Documentación completa de entregas
-- ✅ **Multiplataforma:** Acceso desde móvil, tablet y PC
+- **Gestión de Clientes:** Base de datos completa con historial de pedidos
+- **Catálogo de Productos:** Control de stock, precios y fechas de caducidad
+- **Sistema de Pedidos:** Generación automática con códigos familiares al usuario
+- **Facturación Automática:** Envío por email y generación de PDFs
+- **Control de Inventario:** Actualización en tiempo real
+- **Albaranes de Entrega:** Documentación completa de entregas
+- **Multiplataforma:** Acceso desde móvil, tablet y PC
 
 ## Tecnologías Utilizadas
 
@@ -102,7 +102,7 @@ erp-farmacias/
 ```bash
 # Base de datos
 DB_USER=postgres
-DB_PASSWORD=tu_password
+DB_PASSWORD=password
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=erp_farmacias
@@ -111,11 +111,11 @@ DB_NAME=erp_farmacias
 SECRET_KEY=tu_clave_secreta
 FLASK_ENV=development
 
-# Email (opcional)
+# Email (Aun no implementado)
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
-MAIL_USERNAME=tu_email
-MAIL_PASSWORD=tu_password
+MAIL_USERNAME=email
+MAIL_PASSWORD=password
 ```
 
 ## Uso del Sistema
@@ -188,21 +188,4 @@ Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 ## Soporte
 
 Para soporte técnico o consultas:
-- **Email:** soporte@meganevada.com
-- **Teléfono:** +34 XXX XXX XXX
-
-## Changelog
-
-### v6.0 (2025-06-06)
-- Sistema completo funcional
-- home implementado
-- Conexión PostgreSQL establecida
-- Documentación Doxygen completa
-
-### v5.0 (2025-05-30)
-- Modelos de base de datos implementados
-- Sistema de configuración completado
-
-### v4.0 (2025-05-25)
-- Estructura inicial del proyecto
-- Configuración del entorno de desarrollo
+- **Email:** jodasafer@gmail.com

@@ -3,11 +3,10 @@
 
 """
 @file pedidos.py
-@brief Rutas para la gestión de pedidos del ERP
-@details Este módulo contiene todas las rutas relacionadas con la gestión
-         de pedidos: crear, listar, editar, eliminar y control de estado.
+@brief Rutas para la gestión de pedidos del ERP de Mega Nevada
+@details Este módulo contiene todas las rutas relacionadas con la gestión de pedidos: crear, listar, editar, eliminar y control de estado.
 @author José David Sánchez Fernández
-@version 1.5
+@version 1.6
 @date 2025-06-15
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
@@ -25,8 +24,7 @@ pedidos_bp = Blueprint('pedidos', __name__, url_prefix='/pedidos')
 def lista_pedidos():
     """
     @brief Lista todos los pedidos del sistema
-    @details Muestra una tabla paginada con todos los pedidos registrados,
-             con opción de búsqueda y filtros por estado.
+    @details Muestra una tabla paginada con todos los pedidos registrados, con opción de búsqueda y filtros por estado.
     @return Template HTML con la lista de pedidos
     @version 1.2
     """
@@ -40,7 +38,7 @@ def lista_pedidos():
         try:
             query = Pedido.query
         except Exception as e:
-            print(f"⚠️ Tabla de pedidos no existe aún: {str(e)}")
+            print(f"Tabla de pedidos no existe aún: {str(e)}")
             db.create_all()
             query = Pedido.query
         
@@ -48,7 +46,7 @@ def lista_pedidos():
         try:
             query = query.join(Cliente)
         except Exception as e:
-            print(f"⚠️ No se puede hacer join con Cliente: {str(e)}")
+            print(f"No se puede hacer join con Cliente: {str(e)}")
             pass
         
         # Aplicar filtro de búsqueda si existe
@@ -65,7 +63,7 @@ def lista_pedidos():
                         (Cliente.codigo.ilike(search_filter))
                     )
             except Exception as e:
-                print(f"⚠️ Error en filtro de búsqueda: {str(e)}")
+                print(f"Error en filtro de búsqueda: {str(e)}")
                 query = Pedido.query.filter(Pedido.numero_pedido.ilike(search_filter))
         
         # Filtrar por estado
@@ -92,7 +90,7 @@ def lista_pedidos():
                              cliente_id=cliente_id)
                              
     except Exception as e:
-        print(f"❌ Error al cargar pedidos: {str(e)}")
+        print(f"Error al cargar pedidos: {str(e)}")
         flash(f'Error al cargar pedidos: {str(e)}', 'danger')
         
         class EmptyPagination:
@@ -108,27 +106,40 @@ def lista_pedidos():
         pedidos_vacios = EmptyPagination()
         estados = ['pendiente', 'confirmado', 'entregado', 'facturado']
         
-        return render_template('pedidos/lista.html', 
-                             pedidos=pedidos_vacios, 
-                             search='',
-                             estado='',
-                             estados=estados,
-                             cliente_id=None)
+        return render_template('pedidos/lista.html', pedidos=pedidos_vacios, search='', estado='', estados=estados, cliente_id=None)
 
 @pedidos_bp.route('/nuevo')
 def nuevo_pedido():
     """
     @brief Formulario para crear un nuevo pedido
-    @details Muestra el formulario de registro de pedido nuevo
+    @details Muestra el formulario de registro de pedido nuevo. Soporta parámetros de cliente y producto pre-seleccionados.
     @return Template HTML del formulario
-    @version 1.0
+    @version 1.1
     """
     cliente_id = request.args.get('cliente', type=int)
+    producto_id = request.args.get('producto', type=int)
+    
     cliente = None
+    producto = None
+    
+    # Cargar cliente si se especifica
     if cliente_id:
         cliente = Cliente.query.get_or_404(cliente_id)
     
-    return render_template('pedidos/formulario.html', cliente=cliente)
+    # Cargar producto si se especifica
+    if producto_id:
+        try:
+            producto = Producto.query.get(producto_id)
+            if producto:
+                print(f"Producto pre-seleccionado para pedido: {producto.nombre} (ID: {producto_id})")
+            else:
+                print(f"Producto con ID {producto_id} no encontrado")
+        except Exception as e:
+            print(f"Error al cargar producto pre-seleccionado: {str(e)}")
+    
+    return render_template('pedidos/formulario.html', 
+                         cliente=cliente, 
+                         producto=producto)
 
 @pedidos_bp.route('/editar/<int:id>')
 def editar_pedido(id):
@@ -151,7 +162,7 @@ def api_crear_pedido():
     """
     try:
         data = request.get_json()
-        print(f"📥 Datos de pedido recibidos: {data}")
+        print(f"Datos de pedido recibidos: {data}")
         
         # Validar datos requeridos
         if not data.get('cliente_id'):
@@ -234,12 +245,12 @@ def api_crear_pedido():
         try:
             factura = generar_factura_automatica(pedido)
             if factura:
-                print(f"✅ Factura {factura.numero_factura} generada automáticamente para pedido {numero_pedido}")
+                print(f"Factura {factura.numero_factura} generada automáticamente para pedido {numero_pedido}")
             else:
-                print(f"⚠️ No se pudo generar la factura para el pedido {numero_pedido}")
+                print(f"No se pudo generar la factura para el pedido {numero_pedido}")
         except Exception as e:
-            print(f"❌ Error al generar factura automática: {str(e)}")
-            # No fallar el pedido por error en factura, pero registrar el error
+            print(f"Error al generar factura automática: {str(e)}")
+            # No hacer fallar el pedido por error en factura, pero registrar el error
             db.session.rollback()
             return jsonify({
                 'success': False,
@@ -248,7 +259,7 @@ def api_crear_pedido():
         
         # Hacer commit de todo junto
         db.session.commit()
-        print(f"✅ Pedido {numero_pedido} creado correctamente")
+        print(f"Pedido {numero_pedido} creado correctamente")
         
         return jsonify({
             'success': True,
@@ -259,7 +270,7 @@ def api_crear_pedido():
         })
         
     except Exception as e:
-        print(f"❌ Error en api_crear_pedido: {str(e)}")
+        print(f"Error en api_crear_pedido: {str(e)}")
         db.session.rollback()
         return jsonify({
             'success': False,
@@ -333,9 +344,9 @@ def api_actualizar_pedido(id):
             factura_actual = obtener_factura_pedido(pedido)
             if factura_actual:
                 actualizar_factura_automatica(pedido)
-                print(f"✅ Factura {factura_actual.numero_factura} actualizada automáticamente")
+                print(f"Factura {factura_actual.numero_factura} actualizada automáticamente")
         except Exception as e:
-            print(f"⚠️ Error al actualizar factura automática: {str(e)}")
+            print(f"Error al actualizar factura automática: {str(e)}")
         
         db.session.commit()
         
@@ -402,7 +413,7 @@ def api_detalle_pedido(id):
     @brief API para obtener detalles completos de un pedido
     @param id ID del pedido
     @return JSON con datos completos del pedido incluyendo items
-    @version 1.3 - CORRECCIÓN DEL ERROR DE FACTURA
+    @version 1.3
     """
     try:
         pedido = Pedido.query.get_or_404(id)
@@ -410,7 +421,7 @@ def api_detalle_pedido(id):
         # Convertir pedido a diccionario con items
         pedido_data = pedido.to_dict()
         
-        # Manejo seguro de items
+        # Manejo de items
         try:
             if pedido.items:
                 pedido_data['items'] = []
@@ -418,15 +429,14 @@ def api_detalle_pedido(id):
                     try:
                         pedido_data['items'].append(item.to_dict())
                     except Exception as item_error:
-                        print(f"⚠️ Error al serializar item {getattr(item, 'id', 'unknown')}: {str(item_error)}")
+                        print(f"Error al serializar item {getattr(item, 'id', 'unknown')}: {str(item_error)}")
                         continue
             else:
                 pedido_data['items'] = []
         except Exception as items_error:
-            print(f"⚠️ Error al acceder a items del pedido {id}: {str(items_error)}")
+            print(f"Error al acceder a items del pedido {id}: {str(items_error)}")
             pedido_data['items'] = []
         
-        # CORRECCIÓN: Manejo seguro de factura con función auxiliar
         try:
             factura_actual = obtener_factura_pedido(pedido)
             if factura_actual:
@@ -437,12 +447,12 @@ def api_detalle_pedido(id):
                     'total': float(factura_actual.total),
                     'enviada_por_email': factura_actual.enviada_por_email
                 }
-                print(f"✅ Factura {factura_actual.numero_factura} encontrada para pedido {id}")
+                print(f"Factura {factura_actual.numero_factura} encontrada para pedido {id}")
             else:
                 pedido_data['factura'] = None
-                print(f"ℹ️ No se encontró factura para el pedido {id}")
+                print(f"No se encontró factura para el pedido {id}")
         except Exception as factura_error:
-            print(f"⚠️ Error al acceder a factura del pedido {id}: {str(factura_error)}")
+            print(f"Error al acceder a factura del pedido {id}: {str(factura_error)}")
             pedido_data['factura'] = None
         
         return jsonify({
@@ -451,7 +461,7 @@ def api_detalle_pedido(id):
         })
         
     except Exception as e:
-        print(f"❌ Error general en api_detalle_pedido: {str(e)}")
+        print(f"Error general en api_detalle_pedido: {str(e)}")
         return jsonify({
             'success': False,
             'error': f'Error al obtener pedido: {str(e)}'
@@ -520,7 +530,7 @@ def api_buscar_productos():
         })
         
     except Exception as e:
-        print(f"❌ Error en búsqueda de productos: {str(e)}")
+        print(f"Error en búsqueda de productos: {str(e)}")
         return jsonify({
             'error': f'Error en búsqueda: {str(e)}'
         }), 500
@@ -616,7 +626,7 @@ def obtener_factura_pedido(pedido):
     @brief Obtiene la factura asociada a un pedido de forma segura
     @param pedido Objeto Pedido
     @return Factura o None
-    @version 1.0 - NUEVA FUNCIÓN PARA MANEJAR RELACIÓN FACTURA
+    @version 1.0
     """
     try:
         # Método 1: Usar la relación backref si está definida correctamente
@@ -642,7 +652,7 @@ def obtener_factura_pedido(pedido):
         return factura
         
     except Exception as e:
-        print(f"⚠️ Error en obtener_factura_pedido: {str(e)}")
+        print(f"Error en obtener_factura_pedido: {str(e)}")
         # Método 3: Consulta directa como último recurso
         try:
             return Factura.query.filter_by(pedido_id=pedido.id).first()
@@ -688,11 +698,11 @@ def generar_factura_automatica(pedido):
         # Verificar si ya tiene factura usando la función auxiliar
         factura_existente = obtener_factura_pedido(pedido)
         if factura_existente:
-            print(f"⚠️ El pedido {pedido.numero_pedido} ya tiene una factura: {factura_existente.numero_factura}")
+            print(f"El pedido {pedido.numero_pedido} ya tiene una factura: {factura_existente.numero_factura}")
             return factura_existente
         
         numero_factura = generar_numero_factura()
-        print(f"🧾 Generando factura {numero_factura} para pedido {pedido.numero_pedido}")
+        print(f"Generando factura {numero_factura} para pedido {pedido.numero_pedido}")
         
         factura = Factura(
             numero_factura=numero_factura,
@@ -705,11 +715,11 @@ def generar_factura_automatica(pedido):
         db.session.add(factura)
         # No hacer flush aquí, se hará commit en la función principal
         
-        print(f"✅ Factura {numero_factura} creada en sesión para pedido {pedido.numero_pedido}")
+        print(f"Factura {numero_factura} creada en sesión para pedido {pedido.numero_pedido}")
         return factura
         
     except Exception as e:
-        print(f"❌ Error en generar_factura_automatica: {str(e)}")
+        print(f"Error en generar_factura_automatica: {str(e)}")
         raise e
 
 def actualizar_factura_automatica(pedido):
@@ -717,7 +727,7 @@ def actualizar_factura_automatica(pedido):
     @brief Actualiza automáticamente la factura cuando se modifica un pedido
     @param pedido Objeto Pedido modificado
     @return Factura Objeto factura actualizado
-    @version 1.1 - CORREGIDO PARA USAR FUNCIÓN AUXILIAR
+    @version 1.1
     """
     factura_actual = obtener_factura_pedido(pedido)
     if not factura_actual:

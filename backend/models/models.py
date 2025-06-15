@@ -3,9 +3,8 @@
 
 """
 @file models.py
-@brief Modelos de base de datos para el ERP de proveedor autónomo de farmacias
-@details Este módulo contiene todos los modelos de SQLAlchemy que representan 
-         las entidades del sistema: clientes, productos, pedidos, facturas y albaranes.
+@brief Modelos de base de datos para el ERP de Mega Nevada
+@details Este módulo contiene todos los modelos de SQLAlchemy que representan las entidades del sistema: clientes, productos, pedidos, facturas y albaranes.
 @author José David Sánchez Fernández
 @version 4.6
 @date 2025-06-15
@@ -22,13 +21,12 @@ db = SQLAlchemy()
 class Cliente(db.Model):
     """
     @brief Modelo para gestionar clientes del proveedor
-    @details Representa la información completa de cada cliente farmacia,
-             incluyendo datos de contacto, historial y estado.
+    @details Representa la información completa de cada cliente farmacia, incluyendo datos de contacto, historial y estado.
     @version 3.5
     """
     __tablename__ = 'clientes'
     
-    # Campos básicos que seguro existen
+    # Campos básicos
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(20), unique=True, nullable=False, index=True)
     nombre = db.Column(db.String(100), nullable=False)
@@ -40,11 +38,11 @@ class Cliente(db.Model):
     activo = db.Column(db.Boolean, default=True)
     notas = db.Column(db.Text)
     
-    # Campos para facturación (sin recargo_equivalencia)
-    nombre_fiscal = db.Column(db.String(150))  # Para facturas
-    cif = db.Column(db.String(20))  # NIF/CIF
-    contacto = db.Column(db.String(100))  # Nombre del farmacéutico
-    cuenta_bancaria = db.Column(db.String(34))  # IBAN
+    # Campos para facturación
+    nombre_fiscal = db.Column(db.String(150))
+    cif = db.Column(db.String(20))
+    contacto = db.Column(db.String(100))
+    cuenta_bancaria = db.Column(db.String(34))
     
     # Relaciones con manejo de errores
     pedidos = db.relationship('Pedido', backref='cliente', lazy='dynamic')
@@ -72,8 +70,7 @@ class Cliente(db.Model):
 class Producto(db.Model):
     """
     @brief Modelo para gestionar productos del catálogo
-    @details Representa cada producto farmacéutico con su información comercial,
-             stock, precios y datos de control de caducidad.
+    @details Representa cada producto farmacéutico con su información comercial, stock, precios y datos de control de caducidad.
     @version 7.3
     """
     __tablename__ = 'productos'
@@ -93,14 +90,12 @@ class Producto(db.Model):
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Campos para identificación y proveedor
-    codigo_nacional = db.Column(db.String(20))  # Código Nacional del medicamento
-    num_referencia = db.Column(db.String(30))  # Número de referencia
-    nombre_proveedor = db.Column(db.String(100))  # Nombre del proveedor
-    marca = db.Column(db.String(100))  # Marca del producto
-    iva_porcentaje = db.Column(db.Numeric(5, 2), default=21.0)  # % IVA (4, 10, 21)
-    
-    # NUEVO: Recargo de equivalencia ahora en productos
-    recargo_equivalencia = db.Column(db.Numeric(5, 2), default=0.0)  # % Recargo de equivalencia
+    codigo_nacional = db.Column(db.String(20))
+    num_referencia = db.Column(db.String(30))
+    nombre_proveedor = db.Column(db.String(100))
+    marca = db.Column(db.String(100))
+    iva_porcentaje = db.Column(db.Numeric(5, 2), default=21.0)
+    recargo_equivalencia = db.Column(db.Numeric(5, 2), default=0.0)
 
     def __repr__(self):
         return f'<Producto {self.codigo}: {self.nombre}>'
@@ -175,9 +170,8 @@ class Producto(db.Model):
 class Pedido(db.Model):
     """
     @brief Modelo para gestionar pedidos de clientes
-    @details Representa cada pedido realizado por un cliente, con su estado,
-             total y relación con items individuales.
-    @version 3.5 - CORREGIDO: Cálculo total_recargo exacto como en template
+    @details Representa cada pedido realizado por un cliente, con su estado, total y relación con items individuales.
+    @version 3.5
     """
     __tablename__ = 'pedidos'
     
@@ -208,8 +202,7 @@ class Pedido(db.Model):
     @property
     def total_recargo(self):
         """
-        Total recargo calculado dinámicamente por tipo de IVA - CORREGIDO
-        Calcula exactamente igual que el template HTML
+        Total recargo calculado dinámicamente por tipo de IVA
         """
         # Calcular bases por tipo de IVA
         base_iva_4 = Decimal('0')
@@ -225,7 +218,7 @@ class Pedido(db.Model):
             elif iva == 21.0:
                 base_iva_21 += item.subtotal_sin_iva
         
-        # Calcular recargos por tipo de IVA (exacto como en template)
+        # Calcular recargos por tipo de IVA
         recargo_4 = base_iva_4 * Decimal('0.005')   # 0.50%
         recargo_10 = base_iva_10 * Decimal('0.014') # 1.40%
         recargo_21 = base_iva_21 * Decimal('0.052') # 5.20%
@@ -236,7 +229,7 @@ class Pedido(db.Model):
     
     @property
     def total(self):
-        """Total calculado dinámicamente - CORREGIDO para sumar recargo"""
+        """Total calculado dinámicamente"""
         return self.subtotal + self.total_iva + self.total_recargo
     
     def calcular_totales(self):
@@ -245,11 +238,10 @@ class Pedido(db.Model):
         @details Método para compatibilidad - los totales se calculan dinámicamente
         @version 1.3
         """
-        # Los totales se calculan automáticamente via properties
         pass
 
     def to_dict(self):
-        """SOLO CORRECCIÓN MÍNIMA: Manejo seguro de len(self.items)"""
+        """Manejo seguro de len(self.items)"""
         try:
             items_count = len(self.items) if self.items else 0
         except:
@@ -274,8 +266,7 @@ class Pedido(db.Model):
 class ItemPedido(db.Model):
     """
     @brief Items individuales de cada pedido
-    @details Representa cada producto dentro de un pedido específico,
-             con cantidad, precio y subtotal calculado.
+    @details Representa cada producto dentro de un pedido específico, con cantidad, precio y subtotal calculado.
     @version 2.3
     """
     __tablename__ = 'items_pedido'
@@ -328,8 +319,7 @@ class ItemPedido(db.Model):
 class Factura(db.Model):
     """
     @brief Modelo para gestionar facturas
-    @details Representa las facturas generadas automáticamente a partir de pedidos,
-             con control de envío por email y estado de pago.
+    @details Representa las facturas generadas automáticamente a partir de pedidos, con control de envío por email y estado de pago.
     @version 5.0
     """
     __tablename__ = 'facturas'
@@ -347,8 +337,7 @@ class Factura(db.Model):
 class Albaran(db.Model):
     """
     @brief Modelo para gestionar albaranes de entrega
-    @details Representa los documentos de entrega asociados a pedidos,
-             con control de estado de entrega y fechas.
+    @details Representa los documentos de entrega asociados a pedidos, con control de estado de entrega y fechas.
     @version 4.0
     """
     __tablename__ = 'albaranes'

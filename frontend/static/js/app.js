@@ -1,8 +1,7 @@
 /**
  * @file app.js
- * @brief JavaScript principal del ERP de proveedor autónomo de farmacias
- * @details Funciones principales para el manejo del frontend, notificaciones,
- *          validaciones y comunicación con la API del backend.
+ * @brief JavaScript principal del ERP de Mega Nevada
+ * @details Funciones principales para el manejo del frontend, notificaciones, validaciones y comunicación con la API del backend.
  * @author José David Sánchez Fernández
  * @version 4.1
  * @date 2025-06-09
@@ -10,12 +9,12 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 ERP Farmacias cargado correctamente');
+    console.log('ERP Farmacias cargado correctamente');
     
     // Inicializar componentes
     initializeApp();
     
-    // Cargar datos del home si estamos en la página principal
+    // Cargar datos del home
     if (window.location.pathname === '/' || window.location.pathname === '') {
         cargarEstadisticasHome();
         actualizarReloj();
@@ -25,8 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /**
  * @brief Inicializa todos los componentes de la aplicación
- * @details Función principal que configura todos los elementos necesarios
- *          para el funcionamiento del frontend.
+ * @details Función principal que configura todos los elementos necesarios para el funcionamiento del frontend.
  * @version 4.0
  */
 function initializeApp() {
@@ -42,8 +40,7 @@ function initializeApp() {
 
 /**
  * @brief Verifica la conexión con la API del backend
- * @details Realiza una petición al endpoint de prueba para verificar
- *          que la comunicación con el servidor funciona correctamente.
+ * @details Realiza una petición al endpoint de prueba para verificar que la comunicación con el servidor funciona correctamente.
  * @version 3.1
  */
 async function checkAPIConnection() {
@@ -52,9 +49,9 @@ async function checkAPIConnection() {
         const data = await response.json();
         
         if (data.status === 'success') {
-            console.log('✅ Conexión con API exitosa');
+            console.log('Conexión con API exitosa');
             
-            // Solo mostrar notificación en el home principal
+            // Solo mostrar notificacion en la home
             if (window.location.pathname === '/' || window.location.pathname === '') {
                 const yaNotificado = sessionStorage.getItem('sistema_conectado_notificado');
                 
@@ -65,7 +62,7 @@ async function checkAPIConnection() {
             }
         }
     } catch (error) {
-        console.error('❌ Error de conexión:', error);
+        console.error('Error de conexión:', error);
         showNotification('Error de conexión con el servidor', 'danger', true);
     }
 }
@@ -77,7 +74,7 @@ async function checkAPIConnection() {
  */
 async function cargarEstadisticasHome() {
     try {
-        console.log('📊 Cargando estadísticas del home...');
+        console.log('Cargando estadísticas del home...');
         
         // Cargar estadísticas principales
         const response = await fetch('/api/home/estadisticas');
@@ -92,9 +89,9 @@ async function cargarEstadisticasHome() {
             actualizarContador('pedidos-pendientes', stats.pedidos_pendientes);
             actualizarContador('facturas-mes', stats.facturas_mes);
             
-            console.log('✅ Estadísticas cargadas correctamente');
+            console.log('Estadísticas cargadas correctamente');
         } else {
-            console.warn('⚠️ Error en estadísticas:', data.error);
+            console.warn('Error en estadísticas:', data.error);
             // Mostrar valores por defecto
             actualizarContador('total-clientes', 0);
             actualizarContador('total-productos', 0);
@@ -109,7 +106,7 @@ async function cargarEstadisticasHome() {
         await cargarAlertasStock();
         
     } catch (error) {
-        console.error('❌ Error al cargar estadísticas:', error);
+        console.error('Error al cargar estadísticas:', error);
         
         // Mostrar valores por defecto en caso de error
         actualizarContador('total-clientes', 0);
@@ -133,7 +130,7 @@ function actualizarContador(elementId, valor) {
     
     // Animación de contador
     const valorActual = 0;
-    const incremento = valor / 20; // 20 pasos para la animación
+    const incremento = valor / 20;
     let contador = 0;
     
     const interval = setInterval(() => {
@@ -220,7 +217,7 @@ async function cargarActividadReciente() {
  * @version 1.0
  */
 function manejarClickActividad(tipo, elementoId, enlaceBase) {
-    console.log(`🖱️ Click en ${tipo} ID: ${elementoId}`);
+    console.log(`Click en ${tipo} ID: ${elementoId}`);
     
     if (tipo === 'cliente') {
         // Para clientes: ir a la lista y abrir modal de detalles
@@ -310,8 +307,7 @@ function actualizarReloj() {
 
 /**
  * @brief Inicializa los tooltips de Bootstrap
- * @details Configura todos los elementos con tooltips para mostrar
- *          información adicional al hacer hover.
+ * @details Configura todos los elementos con tooltips para mostrar información adicional al hacer hover.
  * @version 2.0
  */
 function initializeTooltips() {
@@ -323,8 +319,7 @@ function initializeTooltips() {
 
 /**
  * @brief Configura el sistema de notificaciones
- * @details Crea el contenedor principal para las notificaciones
- *          del sistema si no existe.
+ * @details Crea el contenedor principal para las notificaciones del sistema si no existe.
  * @version 1.0
  */
 function setupNotifications() {
@@ -339,8 +334,7 @@ function setupNotifications() {
 
 /**
  * @brief Muestra una notificación en pantalla
- * @details Crea y muestra una notificación tipo toast con el mensaje
- *          y tipo especificados.
+ * @details Crea y muestra una notificación tipo toast con el mensaje y tipo especificados.
  * @param message Mensaje a mostrar en la notificación
  * @param type Tipo de notificación (success, danger, warning, info)
  * @param persistent Si true, la notificación no se cierra automáticamente
@@ -560,7 +554,7 @@ window.ERPFarmacias = {
     manejarClickActividad
 };
 
-// También hacer disponibles las funciones principales globalmente
+// Hacer disponibles las funciones principales globalmente
 window.cargarEstadisticasHome = cargarEstadisticasHome;
 window.actualizarContador = actualizarContador;
 window.manejarClickActividad = manejarClickActividad;

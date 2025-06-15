@@ -1,8 +1,7 @@
 /**
  * @file clientes.js
  * @brief JavaScript para la gestión de clientes
- * @details Funciones para manejar las operaciones CRUD de clientes,
- *          búsquedas, validaciones y modales.
+ * @details Funciones para manejar las operaciones CRUD de clientes, búsquedas, validaciones y modales.
  * @author José David Sánchez Fernández
  * @version 1.6
  * @date 2025-06-14
@@ -10,7 +9,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📋 Módulo de clientes cargado correctamente');
+    console.log('Módulo de clientes cargado correctamente');
     
     // Inicializar funcionalidades
     inicializarClientes();
@@ -28,10 +27,10 @@ function verificarParametroVer() {
     const clienteId = urlParams.get('ver');
     
     if (clienteId) {
-        console.log(`📋 Mostrando detalles automáticos del cliente ID: ${clienteId}`);
+        console.log(`Mostrando detalles automáticos del cliente ID: ${clienteId}`);
         setTimeout(() => {
             verDetalleCliente(clienteId);
-        }, 500); // Pequeña espera para que se cargue la página
+        }, 500);
     }
 }
 
@@ -99,7 +98,6 @@ function configurarBusqueda() {
         inputBusqueda.addEventListener('input', function() {
             clearTimeout(timeout);
             timeout = setTimeout(() => {
-                // Auto-enviar formulario después de 500ms de inactividad
                 if (this.value.length >= 2 || this.value.length === 0) {
                     this.form.submit();
                 }
@@ -132,7 +130,7 @@ async function verDetalleCliente(clienteId) {
             </div>
         `;
     } else {
-        console.log('⚠️ Modal no encontrado, redirigiendo a editar cliente');
+        console.log('Modal no encontrado, redirigiendo a editar cliente');
         window.location.href = `/clientes/editar/${clienteId}`;
         return;
     }
@@ -172,7 +170,7 @@ async function verDetalleCliente(clienteId) {
 }
 
 /**
- * @brief Muestra los detalles del cliente en el modal (SIN recargo de equivalencia)
+ * @brief Muestra los detalles del cliente en el modal
  * @param data Datos del cliente obtenidos de la API
  * @version 1.4
  */
@@ -182,7 +180,7 @@ function mostrarDetalleCliente(data) {
     
     const contenido = document.getElementById('detalleClienteContent');
     if (!contenido) {
-        console.error('❌ No se encontró el contenedor del modal');
+        console.error('No se encontró el contenedor del modal');
         return;
     }
     
@@ -354,7 +352,6 @@ async function eliminarCliente(clienteId, nombreCliente) {
         
         if (data.success) {
             showNotification(data.message, 'success');
-            // Recargar página después de 1 segundo
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
@@ -376,20 +373,20 @@ function configurarFormularioCliente() {
     const form = document.getElementById('formCliente');
     
     if (!form) {
-        console.log('❌ No se encontró el formulario formCliente');
+        console.log('No se encontró el formulario formCliente');
         return;
     }
     
-    console.log('✅ Configurando formulario de cliente');
+    console.log('Configurando formulario de cliente');
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        console.log('📝 Formulario enviado');
+        console.log('Formulario enviado');
         
         if (validarFormularioCliente()) {
             await guardarCliente();
         } else {
-            console.log('❌ Validación del formulario falló');
+            console.log('Validación del formulario falló');
         }
     });
     
@@ -422,45 +419,45 @@ function configurarFormularioCliente() {
 function validarFormularioCliente() {
     let esValido = true;
     
-    console.log('🔍 Iniciando validación del formulario de cliente...');
+    console.log('Iniciando validación del formulario de cliente...');
     
     // Validar campos requeridos
     if (!validarCampo('codigo')) {
-        console.log('❌ Error en código');
+        console.log('Error en código');
         esValido = false;
     }
     if (!validarCampo('nombre')) {
-        console.log('❌ Error en nombre');
+        console.log('Error en nombre');
         esValido = false;
     }
     
     // Validar campos opcionales con formato
     const email = document.getElementById('email').value;
     if (email && !validarCampo('email')) {
-        console.log('❌ Error en email');
+        console.log('Error en email');
         esValido = false;
     }
     
     const telefono = document.getElementById('telefono').value;
     if (telefono && !validarCampo('telefono')) {
-        console.log('❌ Error en teléfono');
+        console.log('Error en teléfono');
         esValido = false;
     }
     
     // Validar campos fiscales opcionales
     const cif = document.getElementById('cif').value;
     if (cif && !validarCampoFiscal('cif')) {
-        console.log('❌ Error en CIF');
+        console.log('Error en CIF');
         esValido = false;
     }
     
     const cuentaBancaria = document.getElementById('cuenta_bancaria').value;
     if (cuentaBancaria && !validarCampoFiscal('cuenta_bancaria')) {
-        console.log('❌ Error en cuenta bancaria');
+        console.log('Error en cuenta bancaria');
         esValido = false;
     }
     
-    console.log('✅ Validación completada. Resultado:', esValido);
+    console.log('Validación completada. Resultado:', esValido);
     return esValido;
 }
 
@@ -603,7 +600,7 @@ function limpiarError(campo) {
 }
 
 /**
- * @brief Guarda los datos del cliente (crear o actualizar) - SIN recargo de equivalencia
+ * @brief Guarda los datos del cliente (crear o actualizar)
  * @version 1.4
  */
 async function guardarCliente() {
@@ -616,11 +613,11 @@ async function guardarCliente() {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
     
     try {
-        // Obtener datos del formulario - SOLO campos que existen en Cliente
+        // Obtener datos del formulario
         const formData = new FormData(form);
         const data = {};
         
-        // Convertir FormData a objeto (SOLO campos válidos de Cliente)
+        // Convertir FormData a objeto
         const camposValidos = [
             'codigo', 'nombre', 'direccion', 'telefono', 'email', 'notas',
             'nombre_fiscal', 'cif', 'contacto', 'cuenta_bancaria'
@@ -635,7 +632,7 @@ async function guardarCliente() {
         // Manejar checkbox de activo
         data.activo = form.querySelector('#activo') ? form.querySelector('#activo').checked : true;
         
-        console.log('📤 Datos a enviar (filtrados):', data);
+        console.log('Datos a enviar (filtrados):', data);
         
         // Determinar si es creación o actualización
         const clienteId = document.getElementById('cliente_id');
@@ -647,7 +644,7 @@ async function guardarCliente() {
         
         const method = esEdicion ? 'PUT' : 'POST';
         
-        console.log(`📤 Enviando ${method} a ${url}`);
+        console.log(`Enviando ${method} a ${url}`);
         
         const response = await fetch(url, {
             method: method,
@@ -657,14 +654,13 @@ async function guardarCliente() {
             body: JSON.stringify(data)
         });
         
-        console.log('📥 Response status:', response.status);
+        console.log('Response status:', response.status);
         
         const result = await response.json();
-        console.log('📥 Response data:', result);
+        console.log('Response data:', result);
         
         if (result.success) {
             showNotification(result.message, 'success');
-            // Redirigir a la lista después de 1.5 segundos
             setTimeout(() => {
                 window.location.href = '/clientes';
             }, 1500);
@@ -673,10 +669,9 @@ async function guardarCliente() {
         }
         
     } catch (error) {
-        console.error('❌ Error en guardarCliente:', error);
+        console.error('Error en guardarCliente:', error);
         showNotification('Error al guardar cliente: ' + error.message, 'danger');
     } finally {
-        // Restaurar botón
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     }
@@ -739,24 +734,24 @@ function isValidPhone(phone) {
  * @version 1.2
  */
 function isValidCIF(cif) {
-    if (!cif || cif.trim().length === 0) return true; // Campo opcional
+    if (!cif || cif.trim().length === 0) return true;
     
     const cleanCif = cif.trim().toUpperCase().replace(/[\s-]/g, '');
-    console.log('🔍 Validando CIF limpio:', cleanCif);
+    console.log('Validando CIF limpio:', cleanCif);
     
-    // Formatos válidos:
+    // Formatos validos:
     // NIF: 12345678A (8 dígitos + 1 letra)
     // CIF: A12345678 (1 letra + 8 dígitos)
     // NIE: X1234567A (1 letra + 7 dígitos + 1 letra)
-    const nifRegex = /^[0-9]{8}[A-Z]$/;           // DNI/NIF
-    const cifRegex = /^[A-Z][0-9]{8}$/;           // CIF
-    const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;      // NIE
+    const nifRegex = /^[0-9]{8}[A-Z]$/;
+    const cifRegex = /^[A-Z][0-9]{8}$/;
+    const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;
     
     const isNif = nifRegex.test(cleanCif);
     const isCif = cifRegex.test(cleanCif);
     const isNie = nieRegex.test(cleanCif);
     
-    console.log('🔍 Resultado validación CIF:', { isNif, isCif, isNie });
+    console.log('Resultado validación CIF:', { isNif, isCif, isNie });
     
     return isNif || isCif || isNie;
 }
@@ -786,7 +781,7 @@ function isValidIBAN(iban) {
  */
 function cargarEstadisticasCliente() {
     const cardCliente = document.querySelector('[data-cliente-id]');
-    if (!cardCliente) return; // No estamos en página de edición de cliente
+    if (!cardCliente) return;
     
     const clienteId = cardCliente.getAttribute('data-cliente-id');
     if (!clienteId) return;
@@ -811,12 +806,11 @@ function cargarEstadisticasCliente() {
         })
         .catch(error => {
             console.log('Info: No se pudieron cargar las estadísticas del cliente');
-            // Mantener valores por defecto, no mostrar error al usuario
         });
 }
 
 /**
- * @brief Muestra una notificación (fallback si no está disponible globalmente)
+ * @brief Muestra una notificación
  * @param message Mensaje a mostrar
  * @param type Tipo de notificación
  * @version 1.0

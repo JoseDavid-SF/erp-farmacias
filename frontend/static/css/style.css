@@ -1,6 +1,6 @@
 /**
  * @file style.css
- * @brief Estilos principales del ERP de proveedor autónomo de farmacias
+ * @brief Estilos principales del ERP de Mega nevada
  * @author José David Sánchez Fernández
  * @version 6.4
  * @date 2025-06-15
@@ -30,10 +30,6 @@ body {
 .main-content {
     min-height: calc(100vh - var(--navbar-height) - 80px);
 }
-
-/* ========================================
-   ESTILOS DEL LOGO
-   ======================================== */
 
 /* Logo en la navbar */
 .logo-navbar {
@@ -129,7 +125,7 @@ body {
     color: var(--dark-color);
 }
 
-/* Sobrescribir títulos en headers para que aparezcan en negro con mayor peso y tamaño */
+/* Sobrescribir títulos en headers para que aparezcan en negro con mayor tamaño */
 .card-header .text-primary,
 .card-header h6.text-primary {
     color: var(--dark-color) !important;
@@ -137,7 +133,7 @@ body {
     font-size: 1.125rem;
 }
 
-/* Sobrescribir títulos de alertas para que tengan el mismo peso y tamaño */
+/* Sobrescribir títulos de alertas para que tengan el mismo tamaño */
 .card-header .text-danger,
 .card-header h6.text-danger {
     font-weight: 700;
@@ -261,7 +257,7 @@ body {
     border-bottom: none;
 }
 
-/* Texto de actividad en gris con peso normal para que resalte menos */
+/* Texto de actividad en gris para que resalte menos */
 .activity-item .fw-bold {
     color: #6c757d !important;
     font-weight: 500;
@@ -368,9 +364,7 @@ body {
     border-radius: 0.5rem;
 }
 
-/* ========================================
-   ESTILOS PARA PRODUCTOS DESCONTINUADOS
-   ======================================== */
+/* ESTILOS PARA PRODUCTOS DESCONTINUADOS */
 
 /* Tarjeta de producto descontinuado */
 .producto-descontinuado {
@@ -382,8 +376,8 @@ body {
 
 .producto-descontinuado:hover {
     opacity: 0.85;
-    transform: translateY(-2px); /* Menos movimiento que productos activos */
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1); /* Sombra más suave */
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
 }
 
 /* Título de producto descontinuado */
@@ -421,7 +415,7 @@ body {
 }
 
 .producto-descontinuado .producto-imagen:hover {
-    transform: none; /* Sin efecto hover en imágenes descontinuadas */
+    transform: none;
 }
 
 /* Botones en productos descontinuados */
@@ -431,10 +425,9 @@ body {
 }
 
 .producto-descontinuado .btn-outline-secondary.disabled {
-    opacity: 1; /* El botón "Descontinuado" debe ser visible */
+    opacity: 1;
 }
 
-/* Efecto adicional: pseudoelemento para marca visual */
 .producto-descontinuado::before {
     content: '';
     position: absolute;
@@ -451,7 +444,7 @@ body {
 /* Responsive para productos descontinuados */
 @media (max-width: 768px) {
     .producto-descontinuado:hover {
-        transform: none; /* Sin efectos hover en móviles */
+        transform: none;
     }
 }
 
@@ -462,12 +455,12 @@ body {
     border-radius: 0.25rem;
 }
 
-/* Transiciones suaves para iconos */
+/* Transiciones para iconos */
 .fas {
     transition: transform 0.2s ease, color 0.2s ease;
 }
 
-/* Mejoras en responsividad para actividad reciente */
+/* Mejoras para actividad reciente */
 @media (max-width: 768px) {
     .activity-item.cursor-pointer:hover {
         transform: none;
@@ -545,9 +538,7 @@ body {
     }
 }
 
-/* ========================================
-   NUEVOS ESTILOS PARA IVA Y RECARGO
-   ======================================== */
+/* NUEVOS ESTILOS PARA IVA Y RECARGO */
 
 /* Estilos específicos para desglose de totales en lista de pedidos */
 .desglose-totales {
@@ -580,7 +571,7 @@ body {
     font-size: 1.1rem !important;
 }
 
-/* Responsive para desglose de totales */
+/* Responsive desglose de totales */
 @media (max-width: 768px) {
     .desglose-totales {
         min-width: auto;
@@ -596,9 +587,7 @@ body {
     }
 }
 
-/* ========================================
-   ESTILOS PARA FACTURAS PDF/IMPRESIÓN
-   ======================================== */
+/* ESTILOS PARA FACTURAS PDF/IMPRESIÓN */
 
 /* Estilos base para facturas */
 .factura-header {
@@ -672,7 +661,7 @@ body {
     padding-top: 0.5rem;
 }
 
-/* Estilos para IMPRESIÓN OPTIMIZADOS */
+/* Estilos para impresión */
 @media print {
     /* Ocultar elementos de navegación y layout */
     .no-print,

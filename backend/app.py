@@ -3,9 +3,8 @@
 
 """
 @file app.py
-@brief Aplicación principal del ERP de proveedor autónomo de farmacias
-@details Archivo principal que inicializa Flask, configura la base de datos
-         y define las rutas principales del sistema.
+@brief Aplicación principal del ERP de Mega Nevada
+@details Archivo principal que inicializa Flask, configura la base de datos y define las rutas principales del sistema.
 @author José David Sánchez Fernández
 @version 6.3
 @date 2025-06-15
@@ -21,17 +20,14 @@ import os
 def create_app(config_name=None):
     """
     @brief Factory para crear la aplicación Flask
-    @details Función factory que configura y crea la instancia de Flask
-             con todas las extensiones y configuraciones necesarias.
+    @details Función factory que configura y crea la instancia de Flask con todas las extensiones y configuraciones necesarias.
     @param config_name Nombre del entorno de configuración a usar
     @return Flask Instancia configurada de la aplicación
     @version 6.2
     """
     
     # Crear instancia de Flask
-    app = Flask(__name__, 
-                template_folder='../frontend/templates',
-                static_folder='../frontend/static')
+    app = Flask(__name__, template_folder='../frontend/templates', static_folder='../frontend/static')
     
     # Configurar la aplicación
     config_name = config_name or os.getenv('FLASK_CONFIG', 'default')
@@ -49,24 +45,24 @@ def create_app(config_name=None):
     try:
         from routes.productos import productos_bp
         app.register_blueprint(productos_bp)
-        print("✅ Blueprint de productos registrado")
+        print("Blueprint de productos registrado")
     except ImportError:
-        print("⚠️ Blueprint de productos no encontrado")
+        print("Blueprint de productos no encontrado")
     
     app.register_blueprint(clientes_bp)
     app.register_blueprint(pedidos_bp)
     app.register_blueprint(facturas_bp)
-    print("✅ Blueprints de clientes, pedidos y facturas registrados")
+    print("Blueprints de clientes, pedidos y facturas registrados")
     
     # Crear las tablas de la base de datos
     with app.app_context():
         try:
             db.create_all()
-            print("✅ Base de datos inicializada correctamente")
-            print("✅ Tablas creadas en PostgreSQL")
+            print("Base de datos inicializada correctamente")
+            print("Tablas creadas en PostgreSQL")
         except Exception as e:
-            print(f"❌ Error al inicializar la base de datos: {e}")
-            print(f"❌ Verifica la configuración en .env")
+            print(f"Error al inicializar la base de datos: {e}")
+            print(f"Verifica la configuración en .env")
     
     # Registrar rutas principales
     @app.route('/')
@@ -135,13 +131,13 @@ def create_app(config_name=None):
             # Estadísticas de clientes
             total_clientes = Cliente.query.filter_by(activo=True).count()
             
-            # Estadísticas de productos - manejar si no existe la tabla
+            # Estadísticas de productos
             try:
                 total_productos = Producto.query.filter_by(activo=True).count()
             except:
                 total_productos = 0
             
-            # Estadísticas de pedidos - manejar si no existe la tabla
+            # Estadísticas de pedidos
             try:
                 pedidos_pendientes = Pedido.query.filter_by(estado='pendiente').count()
                 total_pedidos = Pedido.query.count()
@@ -149,7 +145,7 @@ def create_app(config_name=None):
                 pedidos_pendientes = 0
                 total_pedidos = 0
             
-            # Estadísticas de facturas del mes actual - manejar si no existe la tabla
+            # Estadísticas de facturas del mes actual
             try:
                 inicio_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 facturas_mes = Factura.query.filter(Factura.fecha_factura >= inicio_mes).count()
@@ -168,7 +164,7 @@ def create_app(config_name=None):
             })
             
         except Exception as e:
-            print(f"❌ Error en estadísticas: {str(e)}")
+            print(f"Error en estadísticas: {str(e)}")
             return jsonify({
                 'success': False,
                 'error': f'Error al obtener estadísticas: {str(e)}',
@@ -209,7 +205,7 @@ def create_app(config_name=None):
                         'elemento_tipo': 'pedido'
                     })
             except:
-                pass  # Si no existe la tabla pedidos
+                pass
             
             # Últimos clientes creados
             clientes_recientes = Cliente.query.order_by(Cliente.fecha_creacion.desc()).limit(2).all()
@@ -240,7 +236,7 @@ def create_app(config_name=None):
                         'elemento_tipo': 'producto'
                     })
             except:
-                pass  # Si no existe la tabla productos
+                pass
             
             # Pedidos pendientes (alertas)
             try:
@@ -278,7 +274,7 @@ def create_app(config_name=None):
                         'elemento_tipo': 'producto'
                     })
             except:
-                pass  # Si no existe la tabla productos
+                pass
             
             # Ordenar por fecha (más recientes primero)
             actividades.sort(key=lambda x: x['fecha'], reverse=True)
@@ -310,7 +306,7 @@ def create_app(config_name=None):
             
             return jsonify({
                 'success': True,
-                'actividades': actividades[:6]  # Últimas 6 actividades
+                'actividades': actividades[:6]
             })
             
         except Exception as e:
@@ -332,10 +328,7 @@ def create_app(config_name=None):
             
             # Buscar productos con stock bajo
             try:
-                productos_stock_bajo = Producto.query.filter(
-                    Producto.stock <= Producto.stock_minimo,
-                    Producto.activo == True
-                ).all()
+                productos_stock_bajo = Producto.query.filter(Producto.stock <= Producto.stock_minimo, Producto.activo == True).all()
                 
                 productos = []
                 for producto in productos_stock_bajo:
@@ -420,14 +413,14 @@ if __name__ == '__main__':
     # Crear y ejecutar la aplicación
     app = create_app()
     
-    print("🚀 Iniciando ERP Proveedor Autónomo de Farmacias...")
-    print("📊 Home disponible en: http://localhost:5000")
-    print("👥 Clientes disponible en: http://localhost:5000/clientes")
-    print("📦 Productos disponible en: http://localhost:5000/productos")
-    print("🛒 Pedidos disponible en: http://localhost:5000/pedidos")
-    print("🧾 Facturas disponible en: http://localhost:5000/facturas")
-    print("🔧 API disponible en: http://localhost:5000/api/test")
-    print("📋 Estado del sistema: http://localhost:5000/api/status")
+    print("Iniciando ERP Mega Nevada...")
+    print("Home disponible en: http://localhost:5000")
+    print("Clientes disponible en: http://localhost:5000/clientes")
+    print("Productos disponible en: http://localhost:5000/productos")
+    print("Pedidos disponible en: http://localhost:5000/pedidos")
+    print("Facturas disponible en: http://localhost:5000/facturas")
+    print("API disponible en: http://localhost:5000/api/test")
+    print("Estado del sistema: http://localhost:5000/api/status")
     
     app.run(
         host='0.0.0.0',

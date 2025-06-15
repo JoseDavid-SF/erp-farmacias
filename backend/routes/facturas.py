@@ -3,9 +3,8 @@
 
 """
 @file facturas.py
-@brief Rutas para la gestión de facturas del ERP
-@details Este módulo contiene todas las rutas relacionadas con la gestión
-         de facturas: crear, listar, visualizar e imprimir.
+@brief Rutas para la gestión de facturas del ERP de Mega Nevada
+@details Este módulo contiene todas las rutas relacionadas con la gestión de facturas: crear, listar, visualizar e imprimir.
 @author José David Sánchez Fernández
 @version 1.2
 @date 2025-06-15
@@ -25,8 +24,7 @@ facturas_bp = Blueprint('facturas', __name__, url_prefix='/facturas')
 def lista_facturas():
     """
     @brief Lista todas las facturas del sistema
-    @details Muestra una tabla paginada con todas las facturas generadas,
-             con opción de búsqueda y filtros.
+    @details Muestra una tabla paginada con todas las facturas generadas, con opción de búsqueda y filtros.
     @return Template HTML con la lista de facturas
     @version 1.0
     """
@@ -51,9 +49,7 @@ def lista_facturas():
             page=page, per_page=15, error_out=False
         )
         
-        return render_template('facturas/lista.html', 
-                             facturas=facturas, 
-                             search=search)
+        return render_template('facturas/lista.html', facturas=facturas, search=search)
                              
     except Exception as e:
         flash(f'Error al cargar facturas: {str(e)}', 'danger')
@@ -68,54 +64,54 @@ def ver_factura(id):
     @version 1.1
     """
     try:
-        print(f"🔍 Intentando cargar factura con ID: {id}")
+        print(f"Intentando cargar factura con ID: {id}")
         
         # Verificar que la factura existe
         factura = Factura.query.get(id)
         if not factura:
-            print(f"❌ Factura con ID {id} no encontrada")
+            print(f"Factura con ID {id} no encontrada")
             flash(f'Factura con ID {id} no encontrada', 'danger')
             return redirect(url_for('facturas.lista_facturas'))
         
-        print(f"✅ Factura encontrada: {factura.numero_factura}")
+        print(f"Factura encontrada: {factura.numero_factura}")
         
         # Verificar que tiene pedido asociado
         if not factura.pedido:
-            print(f"❌ Factura {factura.numero_factura} no tiene pedido asociado")
+            print(f"Factura {factura.numero_factura} no tiene pedido asociado")
             flash(f'Factura {factura.numero_factura} no tiene pedido asociado', 'danger')
             return redirect(url_for('facturas.lista_facturas'))
         
-        print(f"✅ Pedido asociado: {factura.pedido.numero_pedido}")
+        print(f"Pedido asociado: {factura.pedido.numero_pedido}")
         
         # Verificar que el pedido tiene cliente
         if not factura.pedido.cliente:
-            print(f"❌ El pedido {factura.pedido.numero_pedido} no tiene cliente asociado")
+            print(f"El pedido {factura.pedido.numero_pedido} no tiene cliente asociado")
             flash(f'El pedido {factura.pedido.numero_pedido} no tiene cliente asociado', 'danger')
             return redirect(url_for('facturas.lista_facturas'))
         
-        print(f"✅ Cliente asociado: {factura.pedido.cliente.nombre}")
+        print(f"Cliente asociado: {factura.pedido.cliente.nombre}")
         
         # Verificar que el pedido tiene items
         if not factura.pedido.items or len(factura.pedido.items) == 0:
-            print(f"❌ El pedido {factura.pedido.numero_pedido} no tiene items")
+            print(f"El pedido {factura.pedido.numero_pedido} no tiene items")
             flash(f'El pedido {factura.pedido.numero_pedido} no tiene productos', 'danger')
             return redirect(url_for('facturas.lista_facturas'))
         
-        print(f"✅ Items del pedido: {len(factura.pedido.items)}")
+        print(f"Items del pedido: {len(factura.pedido.items)}")
         
         # Verificar que los items tienen productos
         for i, item in enumerate(factura.pedido.items):
             if not item.producto:
-                print(f"❌ Item {i+1} del pedido no tiene producto asociado")
+                print(f"Item {i+1} del pedido no tiene producto asociado")
                 flash(f'Hay productos faltantes en el pedido {factura.pedido.numero_pedido}', 'danger')
                 return redirect(url_for('facturas.lista_facturas'))
         
-        print(f"✅ Todos los datos verificados, renderizando template")
+        print(f"Todos los datos verificados, renderizando template")
         
         return render_template('facturas/detalle.html', factura=factura)
         
     except Exception as e:
-        print(f"❌ Error en ver_factura: {str(e)}")
+        print(f"Error en ver_factura: {str(e)}")
         import traceback
         traceback.print_exc()
         flash(f'Error al cargar factura: {str(e)}', 'danger')
@@ -127,22 +123,22 @@ def generar_pdf_factura(id):
     @brief Redirige a la vista HTML de la factura para impresión
     @param id ID de la factura
     @return Redirección a vista HTML con parámetro de impresión
-    @version 2.0 - CORREGIDO: Usar el mismo template HTML que se ve bien
+    @version 2.0
     """
     try:
-        print(f"🧾 Redirigiendo a vista HTML para factura ID: {id}")
+        print(f"Redirigiendo a vista HTML para factura ID: {id}")
         
         # Verificar que la factura existe
         factura = Factura.query.get(id)
         if not factura:
-            print(f"❌ Factura con ID {id} no encontrada")
+            print(f"Factura con ID {id} no encontrada")
             return "Factura no encontrada", 404
         
-        # Redirigir a la vista HTML que se ve perfecta
+        # Redirigir a la vista HTML
         return redirect(url_for('facturas.ver_factura', id=id) + '?print=1')
         
     except Exception as e:
-        print(f"❌ Error al acceder a factura: {str(e)}")
+        print(f"Error al acceder a factura: {str(e)}")
         return f"Error al acceder a factura: {str(e)}", 500
 
 @facturas_bp.route('/api/generar-desde-pedido/<int:pedido_id>', methods=['POST'])
@@ -306,7 +302,7 @@ def generar_numero_factura():
         # Generar el nuevo número con formato VF/XXX/YY
         numero_factura = f"VF/{siguiente_numero:03d}/{anio_actual}"
         
-        # Verificar que no exista (por seguridad)
+        # Verificar que no exista
         while Factura.query.filter_by(numero_factura=numero_factura).first():
             siguiente_numero += 1
             numero_factura = f"VF/{siguiente_numero:03d}/{anio_actual}"

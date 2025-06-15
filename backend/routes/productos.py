@@ -3,9 +3,8 @@
 
 """
 @file productos.py
-@brief Rutas para la gestión de productos del ERP
-@details Este módulo contiene todas las rutas relacionadas con la gestión
-         de productos: crear, listar, editar, eliminar y control de stock.
+@brief Rutas para la gestión de productos del ERP de Mega Nevada
+@details Este módulo contiene todas las rutas relacionadas con la gestión de productos: crear, listar, editar, eliminar y control de stock.
 @author José David Sánchez Fernández
 @version 1.3
 @date 2025-06-13
@@ -25,8 +24,7 @@ productos_bp = Blueprint('productos', __name__, url_prefix='/productos')
 def lista_productos():
     """
     @brief Lista todos los productos del catálogo
-    @details Muestra una tabla paginada con todos los productos registrados,
-             con opción de búsqueda y filtros por categoría y stock.
+    @details Muestra una tabla paginada con todos los productos registrados, con opción de búsqueda y filtros por categoría y stock.
     @return Template HTML con la lista de productos
     @version 1.1
     """
@@ -63,7 +61,7 @@ def lista_productos():
             query = query.filter(Producto.stock <= Producto.stock_minimo)
         
         # Mostrar productos activos e inactivos
-        # query = query.filter(Producto.activo == True)  # Comentado para mostrar también descontinuados
+        # query = query.filter(Producto.activo == True)
         
         # Paginación
         productos = query.order_by(Producto.nombre).paginate(
@@ -156,7 +154,7 @@ def api_crear_producto():
     """
     try:
         data = request.get_json()
-        print(f"📥 Datos de producto recibidos: {data}")  # Debug log
+        print(f"Datos de producto recibidos: {data}")
         
         # Validar datos requeridos
         if not data.get('codigo') or not data.get('nombre') or not data.get('precio'):
@@ -185,7 +183,7 @@ def api_crear_producto():
             }), 400
         
         # Validar IVA
-        iva_porcentaje = Decimal('21.0')  # Por defecto 21%
+        iva_porcentaje = Decimal('21.0')
         if data.get('iva_porcentaje'):
             try:
                 iva_porcentaje = Decimal(str(data['iva_porcentaje']))
@@ -201,7 +199,7 @@ def api_crear_producto():
                 }), 400
         
         # Validar recargo de equivalencia
-        recargo_equivalencia = Decimal('0.0')  # Por defecto 0%
+        recargo_equivalencia = Decimal('0.0')
         if data.get('recargo_equivalencia'):
             try:
                 recargo_equivalencia = Decimal(str(data['recargo_equivalencia']))
@@ -256,22 +254,20 @@ def api_crear_producto():
             fecha_caducidad=fecha_caducidad,
             categoria=data.get('categoria', '').strip(),
             imagen_url=data.get('imagen_url', '').strip(),
-            # Campos de identificación
             codigo_nacional=data.get('codigo_nacional', '').strip(),
             num_referencia=data.get('num_referencia', '').strip(),
             nombre_proveedor=data.get('nombre_proveedor', '').strip(),
             marca=data.get('marca', '').strip(),
-            # Campos fiscales
             iva_porcentaje=iva_porcentaje,
             recargo_equivalencia=recargo_equivalencia
         )
         
-        print(f"✅ Producto creado en memoria: {producto}")  # Debug log
+        print(f"Producto creado en memoria: {producto}")
         
         db.session.add(producto)
         db.session.commit()
         
-        print("✅ Producto guardado en base de datos")  # Debug log
+        print("Producto guardado en base de datos")
         
         return jsonify({
             'success': True,
@@ -280,7 +276,7 @@ def api_crear_producto():
         })
         
     except Exception as e:
-        print(f"❌ Error en api_crear_producto: {str(e)}")  # Debug log
+        print(f"Error en api_crear_producto: {str(e)}")
         db.session.rollback()
         return jsonify({
             'success': False,
@@ -330,7 +326,7 @@ def api_actualizar_producto(id):
             }), 400
         
         # Validar IVA
-        iva_porcentaje = Decimal('21.0')  # Por defecto 21%
+        iva_porcentaje = Decimal('21.0')
         if data.get('iva_porcentaje'):
             try:
                 iva_porcentaje = Decimal(str(data['iva_porcentaje']))
@@ -346,7 +342,7 @@ def api_actualizar_producto(id):
                 }), 400
         
         # Validar recargo de equivalencia
-        recargo_equivalencia = Decimal('0.0')  # Por defecto 0%
+        recargo_equivalencia = Decimal('0.0')
         if data.get('recargo_equivalencia'):
             try:
                 recargo_equivalencia = Decimal(str(data['recargo_equivalencia']))

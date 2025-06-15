@@ -1,10 +1,9 @@
 /**
  * @file pedidos.js
  * @brief JavaScript para la gestión de pedidos
- * @details Funciones para manejar las operaciones CRUD de pedidos,
- *          búsquedas, validaciones y control de items.
+ * @details Funciones para manejar las operaciones CRUD de pedidos, búsquedas, validaciones y control de items.
  * @author José David Sánchez Fernández
- * @version 1.2
+ * @version 1.3
  * @date 2025-06-15
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
@@ -16,13 +15,16 @@ let itemsPedido = [];
 let contadorItems = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🛒 Módulo de pedidos cargado correctamente');
+    console.log('Módulo de pedidos cargado correctamente');
     
     // Inicializar funcionalidades
     inicializarPedidos();
     
     // Verificar si hay que mostrar detalles automáticamente
     verificarParametroVerPedido();
+    
+    // Verificar si hay producto pre-seleccionado
+    verificarParametroProducto();
     
     // Cargar items existentes si estamos editando un pedido
     cargarItemsExistentesFormulario();
@@ -37,10 +39,65 @@ function verificarParametroVerPedido() {
     const pedidoId = urlParams.get('ver');
     
     if (pedidoId) {
-        console.log(`🛒 Mostrando detalles automáticos del pedido ID: ${pedidoId}`);
+        console.log(`Mostrando detalles automáticos del pedido ID: ${pedidoId}`);
         setTimeout(() => {
             verDetallePedido(pedidoId);
         }, 500);
+    }
+}
+
+/**
+ * @brief Verifica si hay parámetro 'producto' en URL para pre-seleccionar producto
+ * @version 1.0
+ */
+function verificarParametroProducto() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const productoId = urlParams.get('producto');
+    
+    if (productoId && document.getElementById('formPedido')) {
+        console.log(`Producto pre-seleccionado ID: ${productoId}`);
+        setTimeout(() => {
+            cargarProductoPreseleccionado(productoId);
+        }, 1000);
+    }
+}
+
+/**
+ * @brief Carga un producto pre-seleccionado desde el parámetro URL
+ * @param productoId ID del producto a cargar
+ * @version 1.0
+ */
+async function cargarProductoPreseleccionado(productoId) {
+    try {
+        console.log(`Cargando producto pre-seleccionado: ${productoId}`);
+        
+        // Buscar el producto por ID
+        const response = await fetch(`/productos/api/detalle/${productoId}`);
+        const data = await response.json();
+        
+        if (data.success && data.producto) {
+            const producto = data.producto;
+            console.log(`Producto encontrado: ${producto.nombre}`);
+            
+            // Mostrar notificación
+            showNotification(`Producto ${producto.nombre} pre-seleccionado`, 'info');
+            
+            // Seleccionar automáticamente el producto
+            seleccionarProducto(producto);
+            
+            // Mostrar modal de cantidad automáticamente
+            setTimeout(() => {
+                mostrarModalCantidad();
+            }, 500);
+            
+        } else {
+            console.warn(`No se encontró el producto con ID: ${productoId}`);
+            showNotification('El producto seleccionado no se encontró', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar producto pre-seleccionado:', error);
+        showNotification('Error al cargar el producto seleccionado', 'danger');
     }
 }
 
@@ -54,7 +111,7 @@ function inicializarPedidos() {
     const esLista = document.querySelector('.card-header h5')?.textContent?.includes('Pedidos');
     
     if (esLista && !esFormulario) {
-        // Solo configurar búsqueda automática en la página de LISTA
+        // Solo configurar búsqueda automática en la página de lista
         configurarBusquedaPedidos();
     }
     
@@ -118,7 +175,7 @@ function configurarEventListenersPedidos() {
 }
 
 /**
- * @brief Configura la búsqueda en tiempo real de pedidos (SOLO EN LISTA)
+ * @brief Configura la búsqueda en tiempo real de pedidos
  * @version 1.0
  */
 function configurarBusquedaPedidos() {
@@ -154,11 +211,11 @@ function configurarFormularioPedido() {
     const form = document.getElementById('formPedido');
     
     if (!form) {
-        console.log('❌ No se encontró el formulario formPedido');
+        console.log('No se encontró el formulario formPedido');
         return;
     }
     
-    console.log('✅ Configurando formulario de pedidos');
+    console.log('Configurando formulario de pedidos');
     
     // Configurar búsqueda de clientes
     configurarBusquedaClientes();
@@ -169,12 +226,12 @@ function configurarFormularioPedido() {
     // Event listener para el formulario
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        console.log('📝 Formulario de pedido enviado');
+        console.log('Formulario de pedido enviado');
         
         if (validarFormularioPedido()) {
             await guardarPedido();
         } else {
-            console.log('❌ Validación del formulario falló');
+            console.log('Validación del formulario falló');
         }
     });
     
@@ -673,7 +730,7 @@ async function guardarPedido(esBorrador = false) {
             }))
         };
         
-        console.log('📤 Datos del pedido a enviar:', data);
+        console.log('Datos del pedido a enviar:', data);
         
         // Determinar si es creación o actualización
         const pedidoId = document.getElementById('pedido_id');
@@ -685,7 +742,7 @@ async function guardarPedido(esBorrador = false) {
         
         const method = esEdicion ? 'PUT' : 'POST';
         
-        console.log(`📤 Enviando ${method} a ${url}`);
+        console.log(`Enviando ${method} a ${url}`);
         
         const response = await fetch(url, {
             method: method,
@@ -695,14 +752,13 @@ async function guardarPedido(esBorrador = false) {
             body: JSON.stringify(data)
         });
         
-        console.log('📥 Response status:', response.status);
+        console.log('Response status:', response.status);
         
         const result = await response.json();
-        console.log('📥 Response data:', result);
+        console.log('Response data:', result);
         
         if (result.success) {
             showNotification(result.message, 'success');
-            // Redirigir a la lista después de 1.5 segundos
             setTimeout(() => {
                 window.location.href = '/pedidos';
             }, 1500);
@@ -711,10 +767,9 @@ async function guardarPedido(esBorrador = false) {
         }
         
     } catch (error) {
-        console.error('❌ Error en guardarPedido:', error);
+        console.error('Error en guardarPedido:', error);
         showNotification('Error al guardar pedido', 'danger');
     } finally {
-        // Restaurar botón
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     }
@@ -733,7 +788,7 @@ function cargarItemsExistentesFormulario() {
         return;
     }
     
-    console.log('🔄 Detectando edición de pedido, cargando datos completos...');
+    console.log('Detectando edición de pedido, cargando datos completos...');
     
     // Cargar datos del pedido desde la API
     setTimeout(() => {
@@ -752,7 +807,7 @@ async function cargarDatosPedidoCompleto(pedidoId) {
         const data = await response.json();
         
         if (data.success && data.pedido) {
-            console.log('✅ Datos del pedido cargados desde API:', data.pedido);
+            console.log('Datos del pedido cargados desde API:', data.pedido);
             
             // Cargar datos del cliente
             if (data.pedido.cliente_id) {
@@ -787,7 +842,7 @@ async function cargarDatosPedidoCompleto(pedidoId) {
             }
         }
     } catch (error) {
-        console.error('❌ Error al cargar datos del pedido desde API:', error);
+        console.error('Error al cargar datos del pedido desde API:', error);
     }
 }
 
@@ -809,7 +864,7 @@ function cargarItemsExistentes(items) {
             cantidad: item.cantidad,
             precio_unitario_sin_iva: item.precio_unitario_sin_iva,
             iva_porcentaje: item.iva_porcentaje,
-            recargo_equivalencia: 0, // Se calculará automáticamente
+            recargo_equivalencia: 0,
             subtotal_sin_iva: item.subtotal_sin_iva,
             total_iva: item.total_iva,
             subtotal_con_iva: item.subtotal_con_iva,
@@ -822,7 +877,7 @@ function cargarItemsExistentes(items) {
     actualizarTablaItems();
     calcularTotalesPedido();
     
-    console.log('✅ Items existentes cargados:', itemsPedido);
+    console.log('Items existentes cargados:', itemsPedido);
 }
 
 /**
@@ -833,8 +888,7 @@ function cargarItemsExistentes(items) {
 async function verDetallePedido(pedidoId) {
     const modal = new bootstrap.Modal(document.getElementById('modalDetallePedido'));
     const contenido = document.getElementById('detallePedidoContent');
-    
-    // Mostrar modal con loading
+
     modal.show();
     contenido.innerHTML = `
         <div class="text-center py-4">
@@ -1109,13 +1163,12 @@ function filtrarPendientes() {
 }
 
 /**
- * @brief Imprime la factura asociada a un pedido (NUEVA FUNCIÓN CORREGIDA)
+ * @brief Imprime la factura asociada a un pedido
  * @param pedidoId ID del pedido
  * @version 1.0
  */
 async function imprimirFacturaPedido(pedidoId) {
     try {
-        // Mostrar indicador de carga
         showNotification('Preparando factura para impresión...', 'info');
         
         // Obtener información del pedido para verificar si tiene factura
@@ -1215,7 +1268,7 @@ function showNotification(message, type = 'info') {
         return;
     }
     
-    // Fallback: crear notificación simple
+    // Si no, crear notificación simple
     console.log(`${type.toUpperCase()}: ${message}`);
     
     const alertClass = type === 'success' ? 'alert-success' : 

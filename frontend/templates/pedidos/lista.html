@@ -152,7 +152,7 @@
                                                 <span class="text-primary fw-semibold">{{ "%.2f"|format(pedido.subtotal) }}€</span>
                                             </div>
                                             
-                                            <!-- IVA si existe -->
+                                            <!-- IVA -->
                                             {% if pedido.total_iva > 0 %}
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <span class="text-muted">
@@ -162,7 +162,7 @@
                                             </div>
                                             {% endif %}
                                             
-                                            <!-- Recargo Equivalencia si existe -->
+                                            <!-- Recargo Equivalencia -->
                                             {% if pedido.total_recargo > 0 %}
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <span class="text-muted">
@@ -366,7 +366,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="detallePedidoContent">
-                <!-- El contenido se carga dinámicamente -->
+
             </div>
         </div>
     </div>

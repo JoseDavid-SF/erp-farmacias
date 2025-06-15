@@ -1,8 +1,7 @@
 /**
  * @file productos.js
  * @brief JavaScript para la gestión de productos
- * @details Funciones para manejar las operaciones CRUD de productos,
- *          búsquedas, validaciones y control de stock.
+ * @details Funciones para manejar las operaciones CRUD de productos, búsquedas, validaciones y control de stock.
  * @author José David Sánchez Fernández
  * @version 1.6
  * @date 2025-06-14
@@ -10,7 +9,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📦 Módulo de productos cargado correctamente');
+    console.log('Módulo de productos cargado correctamente');
     
     // Inicializar funcionalidades
     inicializarProductos();
@@ -26,7 +25,7 @@ function inicializarProductos() {
     const esLista = document.querySelector('.card-header h5')?.textContent?.includes('Productos');
     
     if (esLista && !esFormulario) {
-        // Solo configurar búsqueda automática en la página de LISTA
+        // Solo configurar búsqueda automática en la página de lista
         configurarBusquedaProductos();
     }
     
@@ -55,11 +54,11 @@ function configurarCalculoRecargoEquivalencia() {
     const recargoInput = document.getElementById('recargo_equivalencia');
     
     if (!ivaSelect || !recargoInput) {
-        console.log('⚠️ No se encontraron campos de IVA o recargo de equivalencia');
+        console.log('No se encontraron campos de IVA o recargo de equivalencia');
         return;
     }
     
-    console.log('✅ Configurando cálculo automático de recargo de equivalencia');
+    console.log('Configurando cálculo automático de recargo de equivalencia');
     
     /**
      * @brief Calcula el recargo de equivalencia basado en el IVA seleccionado
@@ -85,7 +84,7 @@ function configurarCalculoRecargoEquivalencia() {
         
         recargoInput.value = recargo;
         
-        console.log(`📊 IVA ${iva}% → Recargo ${recargo}%`);
+        console.log(`IVA ${iva}% -> Recargo ${recargo}%`);
     }
     
     // Calcular recargo al cambiar el IVA
@@ -106,10 +105,10 @@ function verificarParametroVerProducto() {
     const productoId = urlParams.get('ver');
     
     if (productoId) {
-        console.log(`📦 Mostrando detalles automáticos del producto ID: ${productoId}`);
+        console.log(`Mostrando detalles automáticos del producto ID: ${productoId}`);
         setTimeout(() => {
             verDetalleProducto(productoId);
-        }, 500); // Pequeña espera para que se cargue la página
+        }, 500);
     }
 }
 
@@ -144,7 +143,7 @@ function configurarEventListenersProductos() {
 }
 
 /**
- * @brief Configura la búsqueda en tiempo real de productos (SOLO EN LISTA)
+ * @brief Configura la búsqueda en tiempo real de productos
  * @version 1.2
  */
 function configurarBusquedaProductos() {
@@ -161,26 +160,20 @@ function configurarBusquedaProductos() {
         });
     }
     
-    // Auto-submit cuando cambia la categoría SOLO EN FILTROS DE LISTA
+    // Auto-submit cuando cambia la categoría
     const selectCategoria = document.getElementById('categoria');
     const esFormulario = document.getElementById('formProducto');
     
     if (selectCategoria && !esFormulario) {
-        // Solo en la página de lista, no en el formulario
         selectCategoria.addEventListener('change', function() {
             this.form.submit();
         });
     }
     
-    // Configurar checkbox de stock bajo para que NO se auto-envíe
     const checkboxStockBajo = document.getElementById('stock_bajo');
     if (checkboxStockBajo && !esFormulario) {
-        // Remover cualquier event listener previo que cause auto-submit
         checkboxStockBajo.removeEventListener('change', autoSubmitHandler);
-        
-        // Solo auto-submit si el usuario hace clic manualmente
         checkboxStockBajo.addEventListener('change', function(e) {
-            // Solo hacer submit si el cambio fue por interacción del usuario
             if (e.isTrusted) {
                 this.form.submit();
             }
@@ -189,10 +182,10 @@ function configurarBusquedaProductos() {
 }
 
 /**
- * @brief Handler para auto-submit (removido para evitar conflictos)
+ * @brief Handler para auto-submit
  */
 function autoSubmitHandler() {
-    // Función vacía para remover event listeners previos
+    // TODO
 }
 
 /**
@@ -204,7 +197,6 @@ async function verDetalleProducto(productoId) {
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleProducto'));
     const contenido = document.getElementById('detalleProductoContent');
     
-    // Mostrar modal con loading
     modal.show();
     contenido.innerHTML = `
         <div class="text-center py-4">
@@ -214,7 +206,7 @@ async function verDetalleProducto(productoId) {
     `;
     
     try {
-        // Intentar primero con el endpoint de detalle específico
+        // Intentar primero con el endpoint de detalle
         let response = await fetch(`/productos/api/detalle/${productoId}`);
         let data = await response.json();
         
@@ -222,7 +214,7 @@ async function verDetalleProducto(productoId) {
             const producto = data.producto;
             mostrarDetalleProducto(producto);
         } else {
-            // Fallback: buscar en la lista de productos del DOM
+            // Buscar en la lista de productos del DOM
             const productoElement = document.querySelector(`[data-producto-id="${productoId}"]`);
             if (productoElement) {
                 const card = productoElement.closest('.producto-card');
@@ -257,8 +249,6 @@ async function verDetalleProducto(productoId) {
  */
 function extraerDatosProductoDelDOM(card, productoId) {
     if (!card) return null;
-    
-    // Extraer información de proveedor y marca desde los elementos small
     let marca = '';
     let nombreProveedor = '';
     let codigoNacional = '';
@@ -280,7 +270,6 @@ function extraerDatosProductoDelDOM(card, productoId) {
         }
     }
     
-    // Verificar si el producto está descontinuado
     const esDescontinuado = card.classList.contains('producto-descontinuado');
     
     return {
@@ -297,7 +286,6 @@ function extraerDatosProductoDelDOM(card, productoId) {
         imagen_url: card.querySelector('img')?.src || null,
         iva_porcentaje: extraerIVADelDOM(card),
         activo: !esDescontinuado,
-        // Nuevos campos
         codigo_nacional: codigoNacional,
         num_referencia: numReferencia,
         nombre_proveedor: nombreProveedor,
@@ -589,7 +577,6 @@ async function eliminarProducto(productoId, nombreProducto) {
  */
 function agregarAPedido(productoId) {
     showNotification('Funcionalidad de pedidos en desarrollo', 'info');
-    // Cerrar modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalleProducto'));
     if (modal) modal.hide();
 }
@@ -602,17 +589,17 @@ function configurarFormularioProducto() {
     const form = document.getElementById('formProducto');
     
     if (!form) {
-        console.log('❌ No se encontró el formulario formProducto');
+        console.log('No se encontró el formulario formProducto');
         return;
     }
     
-    // Verificar si ya está configurado para evitar dobles event listeners
+    // Verificar si ya está configurado
     if (form.dataset.configured === 'true') {
-        console.log('⚠️ Formulario ya configurado, saltando...');
+        console.log('Formulario ya configurado, saltando...');
         return;
     }
     
-    console.log('✅ Configurando formulario de producto');
+    console.log('Configurando formulario de producto');
     
     // Marcar como configurado
     form.dataset.configured = 'true';
@@ -620,23 +607,22 @@ function configurarFormularioProducto() {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('📝 Formulario de producto enviado');
+        console.log('Formulario de producto enviado');
         
         // Verificar si ya se está procesando
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn.disabled) {
-            console.log('⚠️ Formulario ya en proceso, ignorando...');
+            console.log('Formulario ya en proceso, ignorando...');
             return;
         }
         
         if (validarFormularioProducto()) {
             await guardarProducto();
         } else {
-            console.log('❌ Validación del formulario falló');
+            console.log('Validación del formulario falló');
         }
     });
     
-    // Validación en tiempo real para campos básicos
     const campos = ['codigo', 'nombre', 'precio', 'stock', 'stock_minimo', 'iva_porcentaje'];
     campos.forEach(campo => {
         const input = document.getElementById(campo);
@@ -646,7 +632,6 @@ function configurarFormularioProducto() {
         }
     });
     
-    // Validación en tiempo real para nuevos campos
     const camposNuevos = ['codigo_nacional', 'num_referencia', 'nombre_proveedor', 'marca'];
     camposNuevos.forEach(campo => {
         const input = document.getElementById(campo);
@@ -882,7 +867,7 @@ async function guardarProducto() {
             data.recargo_equivalencia = parseFloat(recargoInput.value);
         }
         
-        console.log('📤 Datos de producto a enviar:', data);
+        console.log('Datos de producto a enviar:', data);
         
         // Determinar si es creación o actualización
         const productoId = document.getElementById('producto_id');
@@ -894,7 +879,7 @@ async function guardarProducto() {
         
         const method = esEdicion ? 'PUT' : 'POST';
         
-        console.log(`📤 Enviando ${method} a ${url}`);
+        console.log(`Enviando ${method} a ${url}`);
         
         const response = await fetch(url, {
             method: method,
@@ -904,14 +889,13 @@ async function guardarProducto() {
             body: JSON.stringify(data)
         });
         
-        console.log('📥 Response status:', response.status);
+        console.log('Response status:', response.status);
         
         const result = await response.json();
-        console.log('📥 Response data:', result);
+        console.log('Response data:', result);
         
         if (result.success) {
             showNotification(result.message, 'success');
-            // Redirigir a la lista después de 1.5 segundos
             setTimeout(() => {
                 window.location.href = '/productos';
             }, 1500);
@@ -920,10 +904,9 @@ async function guardarProducto() {
         }
         
     } catch (error) {
-        console.error('❌ Error en guardarProducto:', error);
+        console.error('Error en guardarProducto:', error);
         showNotification('Error al guardar producto', 'danger');
     } finally {
-        // Restaurar botón
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     }
@@ -971,7 +954,7 @@ function showNotification(message, type = 'info') {
         return;
     }
     
-    // Fallback: crear notificación simple
+    // Crear notificación simple
     console.log(`${type.toUpperCase()}: ${message}`);
     
     const alertClass = type === 'success' ? 'alert-success' : 

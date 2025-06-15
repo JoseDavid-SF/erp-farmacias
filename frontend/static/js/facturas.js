@@ -1,7 +1,7 @@
 /**
  * @file facturas.js
  * @brief JavaScript específico para la gestión de facturas
- * @details Funciones para ver, imprimir y gestionar facturas del ERP
+ * @details Funciones para ver, imprimir y gestionar facturas del ERP de Mega Nevada
  * @author José David Sánchez Fernández
  * @version 1.1
  * @date 2025-06-15
@@ -9,7 +9,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📄 Módulo de facturas cargado');
+    console.log('Módulo de facturas cargado');
     configurarBusquedaFacturas();
     configurarTooltipsFacturas();
     configurarEventosFacturas();
@@ -64,7 +64,7 @@ function configurarEventosFacturas() {
  * @version 1.0
  */
 function verFactura(facturaId) {
-    console.log(`🔍 Viendo factura ID: ${facturaId}`);
+    console.log(`Viendo factura ID: ${facturaId}`);
     window.location.href = `/facturas/ver/${facturaId}`;
 }
 
@@ -74,7 +74,7 @@ function verFactura(facturaId) {
  * @version 1.0
  */
 function imprimirFactura(facturaId) {
-    console.log(`🖨️ Imprimiendo factura ID: ${facturaId}`);
+    console.log(`Imprimiendo factura ID: ${facturaId}`);
     
     // Si estamos en la vista de detalle, imprimir directamente
     if (window.location.href.includes(`/facturas/ver/${facturaId}`)) {
@@ -92,7 +92,7 @@ function imprimirFactura(facturaId) {
  */
 async function generarFacturaDesdePedido(pedidoId) {
     try {
-        console.log(`📝 Generando factura desde pedido ID: ${pedidoId}`);
+        console.log(`Generando factura desde pedido ID: ${pedidoId}`);
         
         const response = await fetch(`/facturas/api/generar-desde-pedido/${pedidoId}`, {
             method: 'POST',
@@ -134,7 +134,7 @@ async function marcarComoEnviada(facturaId) {
             return;
         }
         
-        console.log(`📧 Marcando factura ${facturaId} como enviada`);
+        console.log(`Marcando factura ${facturaId} como enviada`);
         
         const response = await fetch(`/facturas/api/marcar-enviada/${facturaId}`, {
             method: 'PUT',
@@ -147,7 +147,7 @@ async function marcarComoEnviada(facturaId) {
         
         if (data.success) {
             showNotification('Factura marcada como enviada', 'success');
-            location.reload(); // Recargar para actualizar el estado
+            location.reload();
         } else {
             showNotification(data.message, 'danger');
         }
@@ -164,14 +164,11 @@ async function marcarComoEnviada(facturaId) {
  * @version 1.0
  */
 function buscarFacturas(termino) {
-    console.log(`🔍 Buscando facturas: ${termino}`);
-    
-    // Si hay un timeout previo, cancelarlo
+    console.log(`Buscando facturas: ${termino}`);
     if (window.busquedaFacturasTimeout) {
         clearTimeout(window.busquedaFacturasTimeout);
     }
     
-    // Configurar nuevo timeout
     window.busquedaFacturasTimeout = setTimeout(() => {
         const url = new URL(window.location);
         
@@ -181,7 +178,7 @@ function buscarFacturas(termino) {
             url.searchParams.delete('search');
         }
         
-        url.searchParams.delete('page'); // Resetear paginación
+        url.searchParams.delete('page');
         window.location.href = url.toString();
     }, 500);
 }
@@ -200,7 +197,7 @@ function configurarBusquedaFacturas() {
 }
 
 /**
- * @brief Obtener estadísticas de facturas para el home
+ * @brief Obtener estadísticas de facturas para la home
  * @return Promise con las estadísticas
  * @version 1.0
  */
@@ -245,7 +242,7 @@ function exportarFacturasCSV() {
  * @version 1.0
  */
 function configurarTooltipsFacturas() {
-    // Configurar tooltips para botones de acción
+    // Configurar tooltips para botones de accion
     const tooltips = [
         { selector: '[title="Ver detalles"]', content: 'Ver detalles completos de la factura' },
         { selector: '[title="Imprimir"]', content: 'Imprimir factura en formato optimizado' },

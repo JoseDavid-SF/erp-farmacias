@@ -3,9 +3,8 @@
 
 """
 @file clientes.py
-@brief Rutas para la gestión de clientes del ERP
-@details Este módulo contiene todas las rutas relacionadas con la gestión
-         de clientes: crear, listar, editar, eliminar y buscar.
+@brief Rutas para la gestión de clientes del ERP de Mega Nevada
+@details Este módulo contiene todas las rutas relacionadas con la gestión de clientes: crear, listar, editar, eliminar y buscar.
 @author José David Sánchez Fernández
 @version 1.5
 @date 2025-06-14
@@ -25,8 +24,7 @@ clientes_bp = Blueprint('clientes', __name__, url_prefix='/clientes')
 def lista_clientes():
     """
     @brief Lista todos los clientes del sistema
-    @details Muestra una tabla paginada con todos los clientes registrados,
-             con opción de búsqueda y filtros.
+    @details Muestra una tabla paginada con todos los clientes registrados, con opción de búsqueda y filtros.
     @return Template HTML con la lista de clientes
     @version 1.0
     """
@@ -96,11 +94,11 @@ def api_crear_cliente():
     """
     try:
         data = request.get_json()
-        print(f"📥 Datos recibidos: {data}")  # Debug log
+        print(f"Datos recibidos: {data}")
         
         # Validar datos requeridos
         if not data.get('codigo') or not data.get('nombre'):
-            print("❌ Error: Faltan campos obligatorios")  # Debug log
+            print("Error: Faltan campos obligatorios")
             return jsonify({
                 'success': False,
                 'message': 'Código y nombre son obligatorios'
@@ -109,7 +107,7 @@ def api_crear_cliente():
         # Verificar que el código no exista
         cliente_existente = Cliente.query.filter_by(codigo=data['codigo']).first()
         if cliente_existente:
-            print(f"❌ Error: Cliente con código {data['codigo']} ya existe")  # Debug log
+            print(f"Error: Cliente con código {data['codigo']} ya existe")
             return jsonify({
                 'success': False,
                 'message': 'Ya existe un cliente con ese código'
@@ -122,7 +120,7 @@ def api_crear_cliente():
                 'message': 'El formato del email no es válido'
             }), 400
         
-        # Crear nuevo cliente (SIN recargo_equivalencia - está en productos)
+        # Crear nuevo cliente
         cliente = Cliente(
             codigo=data['codigo'].strip().upper(),
             nombre=data['nombre'].strip(),
@@ -130,20 +128,19 @@ def api_crear_cliente():
             telefono=data.get('telefono', '').strip(),
             email=data.get('email', '').strip().lower(),
             notas=data.get('notas', '').strip(),
-            # Campos fiscales
             nombre_fiscal=data.get('nombre_fiscal', '').strip(),
             cif=data.get('cif', '').strip().upper(),
             contacto=data.get('contacto', '').strip(),
             cuenta_bancaria=data.get('cuenta_bancaria', '').strip()
         )
         
-        print(f"✅ Cliente creado en memoria: {cliente}")  # Debug log
+        print(f"Cliente creado en memoria: {cliente}")
         
         db.session.add(cliente)
-        print("✅ Cliente añadido a la sesión")  # Debug log
+        print("Cliente añadido a la sesión")
         
         db.session.commit()
-        print("✅ Cambios guardados en base de datos")  # Debug log
+        print("Cambios guardados en base de datos")
         
         return jsonify({
             'success': True,
@@ -152,7 +149,7 @@ def api_crear_cliente():
         })
         
     except Exception as e:
-        print(f"❌ Error en api_crear_cliente: {str(e)}")  # Debug log
+        print(f"Error en api_crear_cliente: {str(e)}")
         db.session.rollback()
         return jsonify({
             'success': False,
@@ -206,7 +203,7 @@ def api_actualizar_cliente(id):
         cliente.notas = data.get('notas', '').strip()
         cliente.activo = data.get('activo', True)
         
-        # Actualizar campos fiscales (SIN recargo_equivalencia - está en productos)
+        # Actualizar campos fiscales
         cliente.nombre_fiscal = data.get('nombre_fiscal', '').strip()
         cliente.cif = data.get('cif', '').strip().upper()
         cliente.contacto = data.get('contacto', '').strip()
@@ -299,16 +296,11 @@ def api_detalle_cliente(id):
     """
     try:
         cliente = Cliente.query.get_or_404(id)
-        
-        # Obtener estadísticas del cliente con manejo seguro de errores
         total_pedidos = 0
         fecha_ultimo_pedido = None
         
         try:
-            # Importar Pedido para hacer consulta directa
             from models.models import Pedido
-            
-            # Contar pedidos directamente desde la tabla
             total_pedidos = Pedido.query.filter_by(cliente_id=cliente.id).count()
             
             # Obtener el último pedido directamente
@@ -323,7 +315,7 @@ def api_detalle_cliente(id):
                 fecha_ultimo_pedido = cliente.fecha_ultima_visita
                 
         except Exception as pedidos_error:
-            print(f"⚠️ Error al obtener pedidos del cliente {id}: {str(pedidos_error)}")
+            print(f"Error al obtener pedidos del cliente {id}: {str(pedidos_error)}")
             # En caso de error, usar valores por defecto
             total_pedidos = 0
             fecha_ultimo_pedido = cliente.fecha_ultima_visita
@@ -337,7 +329,7 @@ def api_detalle_cliente(id):
         })
         
     except Exception as e:
-        print(f"❌ Error en api_detalle_cliente: {str(e)}")
+        print(f"Error en api_detalle_cliente: {str(e)}")
         return jsonify({
             'error': f'Error al obtener cliente: {str(e)}'
         }), 500
