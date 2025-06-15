@@ -4,8 +4,8 @@
  * @details Funciones para manejar las operaciones CRUD de pedidos,
  *          búsquedas, validaciones y control de items.
  * @author José David Sánchez Fernández
- * @version 1.1
- * @date 2025-06-14
+ * @version 1.2
+ * @date 2025-06-15
  * @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
  */
 
@@ -105,7 +105,7 @@ function configurarEventListenersPedidos() {
     document.querySelectorAll('.btn-imprimir-pedido').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const pedidoId = this.dataset.pedidoId;
-            imprimirPedido(pedidoId);
+            imprimirFacturaPedido(pedidoId);
         });
     });
     
@@ -520,6 +520,12 @@ function actualizarTablaItems() {
                 <br><small class="text-muted">+ IVA</small>
             </td>
             <td class="text-end">
+                <div class="small">
+                    <div>IVA: ${item.iva_porcentaje}%</div>
+                    ${item.recargo_equivalencia > 0 ? `<div class="text-info">RE: ${item.recargo_equivalencia.toFixed(1)}%</div>` : ''}
+                </div>
+            </td>
+            <td class="text-end">
                 <strong>${item.subtotal_con_iva.toFixed(2)}€</strong>
                 <br><small class="text-muted">${item.subtotal_sin_iva.toFixed(2)}€ + ${item.total_iva.toFixed(2)}€</small>
             </td>
@@ -655,11 +661,12 @@ async function guardarPedido(esBorrador = false) {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
     
     try {
-        // Preparar datos del pedido - SIN productos_pendientes
+        // Preparar datos del pedido
         const data = {
             cliente_id: document.getElementById('cliente_id').value,
             estado: esBorrador ? 'pendiente' : document.getElementById('estado').value,
             observaciones: document.getElementById('observaciones').value,
+            productos_pendientes: document.getElementById('productos_pendientes').value,
             items: itemsPedido.map(item => ({
                 producto_id: item.producto_id,
                 cantidad: item.cantidad
@@ -715,7 +722,7 @@ async function guardarPedido(esBorrador = false) {
 
 /**
  * @brief Detecta y carga items existentes del formulario de edición
- * @version 1.0
+ * @version 1.1
  */
 function cargarItemsExistentesFormulario() {
     const formulario = document.getElementById('formPedido');
@@ -726,31 +733,61 @@ function cargarItemsExistentesFormulario() {
         return;
     }
     
-    console.log('🔄 Detectando edición de pedido, cargando items...');
+    console.log('🔄 Detectando edición de pedido, cargando datos completos...');
     
-    // Buscar si hay datos de items en elementos hidden o data attributes
-    // Este es el enfoque más limpio sin JavaScript embebido
+    // Cargar datos del pedido desde la API
     setTimeout(() => {
-        cargarItemsDesdeAPI(pedidoId.value);
+        cargarDatosPedidoCompleto(pedidoId.value);
     }, 500);
 }
 
 /**
- * @brief Carga items del pedido desde la API
+ * @brief Carga todos los datos del pedido desde la API (NUEVA FUNCIÓN)
  * @param pedidoId ID del pedido
  * @version 1.0
  */
-async function cargarItemsDesdeAPI(pedidoId) {
+async function cargarDatosPedidoCompleto(pedidoId) {
     try {
         const response = await fetch(`/pedidos/api/detalle/${pedidoId}`);
         const data = await response.json();
         
-        if (data.success && data.pedido && data.pedido.items) {
-            console.log('✅ Items cargados desde API:', data.pedido.items);
-            cargarItemsExistentes(data.pedido.items);
+        if (data.success && data.pedido) {
+            console.log('✅ Datos del pedido cargados desde API:', data.pedido);
+            
+            // Cargar datos del cliente
+            if (data.pedido.cliente_id) {
+                clienteSeleccionado = {
+                    id: data.pedido.cliente_id,
+                    codigo: data.pedido.cliente_codigo,
+                    nombre: data.pedido.cliente_nombre
+                };
+                
+                document.getElementById('cliente_search').value = `${data.pedido.cliente_codigo} - ${data.pedido.cliente_nombre}`;
+                document.getElementById('cliente_id').value = data.pedido.cliente_id;
+            }
+            
+            // Cargar estado
+            if (data.pedido.estado) {
+                document.getElementById('estado').value = data.pedido.estado;
+            }
+            
+            // Cargar observaciones
+            if (data.pedido.observaciones) {
+                document.getElementById('observaciones').value = data.pedido.observaciones;
+            }
+            
+            // Cargar productos pendientes
+            if (data.pedido.productos_pendientes) {
+                document.getElementById('productos_pendientes').value = data.pedido.productos_pendientes;
+            }
+            
+            // Cargar items del pedido
+            if (data.pedido.items && data.pedido.items.length > 0) {
+                cargarItemsExistentes(data.pedido.items);
+            }
         }
     } catch (error) {
-        console.error('❌ Error al cargar items desde API:', error);
+        console.error('❌ Error al cargar datos del pedido desde API:', error);
     }
 }
 
@@ -828,9 +865,9 @@ async function verDetallePedido(pedidoId) {
 }
 
 /**
- * @brief Muestra los detalles del pedido en el modal
+ * @brief Muestra los detalles del pedido en el modal (SIN botón generar factura)
  * @param pedido Datos del pedido obtenidos de la API
- * @version 1.0
+ * @version 1.1
  */
 function mostrarDetallePedido(pedido) {
     const contenido = document.getElementById('detallePedidoContent');
@@ -981,11 +1018,8 @@ function mostrarDetallePedido(pedido) {
                     <i class="fas fa-edit me-1"></i>Editar Pedido
                 </a>
                 ` : ''}
-                <button class="btn btn-outline-primary" onclick="imprimirPedido(${pedido.id})">
-                    <i class="fas fa-print me-1"></i>Imprimir
-                </button>
-                <button class="btn btn-primary" onclick="generarFactura(${pedido.id})">
-                    <i class="fas fa-file-invoice me-1"></i>Generar Factura
+                <button class="btn btn-outline-primary" onclick="imprimirFacturaPedido(${pedido.id})">
+                    <i class="fas fa-print me-1"></i>Imprimir Factura
                 </button>
             </div>
         </div>
@@ -1075,21 +1109,46 @@ function filtrarPendientes() {
 }
 
 /**
- * @brief Imprime un pedido
+ * @brief Imprime la factura asociada a un pedido (NUEVA FUNCIÓN CORREGIDA)
  * @param pedidoId ID del pedido
  * @version 1.0
  */
-function imprimirPedido(pedidoId) {
-    showNotification('Funcionalidad de impresión en desarrollo', 'info');
-}
-
-/**
- * @brief Genera factura desde un pedido
- * @param pedidoId ID del pedido
- * @version 1.0
- */
-function generarFactura(pedidoId) {
-    showNotification('Funcionalidad de facturación en desarrollo', 'info');
+async function imprimirFacturaPedido(pedidoId) {
+    try {
+        // Mostrar indicador de carga
+        showNotification('Preparando factura para impresión...', 'info');
+        
+        // Obtener información del pedido para verificar si tiene factura
+        const response = await fetch(`/pedidos/api/detalle/${pedidoId}`);
+        const data = await response.json();
+        
+        if (data.success && data.pedido && data.pedido.factura) {
+            // El pedido tiene factura, proceder con la impresión
+            const facturaId = data.pedido.factura.id;
+            
+            // Abrir la factura en una nueva ventana para impresión
+            const facturaUrl = `/facturas/pdf/${facturaId}`;
+            const ventanaImpresion = window.open(facturaUrl, '_blank');
+            
+            if (ventanaImpresion) {
+                // Esperar a que cargue y luego imprimir automáticamente
+                ventanaImpresion.onload = function() {
+                    setTimeout(() => {
+                        ventanaImpresion.print();
+                    }, 1000);
+                };
+                showNotification('Factura abierta para impresión', 'success');
+            } else {
+                showNotification('No se pudo abrir la ventana de impresión. Verifique que no esté bloqueada.', 'warning');
+            }
+        } else {
+            showNotification('Este pedido no tiene una factura asociada', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Error al imprimir factura:', error);
+        showNotification('Error al acceder a la factura', 'danger');
+    }
 }
 
 /**

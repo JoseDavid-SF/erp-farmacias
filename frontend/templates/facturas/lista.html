@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Facturas - ERP Farmacias{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+<li class="breadcrumb-item active">Facturas</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="text-primary mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Lista de Facturas
+                    </h6>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
+                            <i class="fas fa-sync-alt me-1"></i>Actualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Barra de búsqueda -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <form method="GET" action="{{ url_for('facturas.lista_facturas') }}">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="search" 
+                                       value="{{ search }}" 
+                                       placeholder="Buscar por número de factura, cliente o pedido...">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                {% if search %}
+                                <a href="{{ url_for('facturas.lista_facturas') }}" class="btn btn-outline-danger">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">
+                            Total de facturas: {{ facturas.total }}
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Tabla de facturas -->
+                {% if facturas.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nº Factura</th>
+                                <th>Cliente</th>
+                                <th>Pedido</th>
+                                <th>Fecha</th>
+                                <th>Total</th>
+                                <th>Estado Email</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for factura in facturas.items %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">{{ factura.numero_factura }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ factura.pedido.cliente.nombre }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ factura.pedido.cliente.codigo }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ factura.pedido.numero_pedido }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        {{ factura.fecha_factura.strftime('%d/%m/%Y') }}
+                                        <br>
+                                        <small class="text-muted">{{ factura.fecha_factura.strftime('%H:%M') }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong class="text-success">{{ "%.2f"|format(factura.total) }} €</strong>
+                                </td>
+                                <td>
+                                    {% if factura.enviada_por_email %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Enviada
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>Pendiente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary" 
+                                                data-factura-id="{{ factura.id }}"
+                                                data-action="ver"
+                                                title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-success" 
+                                                data-factura-id="{{ factura.id }}"
+                                                data-action="imprimir"
+                                                title="Imprimir">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                        {% if not factura.enviada_por_email %}
+                                        <button type="button" 
+                                                class="btn btn-outline-info" 
+                                                data-factura-id="{{ factura.id }}"
+                                                data-action="marcar-enviada"
+                                                title="Marcar como enviada">
+                                            <i class="fas fa-envelope"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if facturas.pages > 1 %}
+                <nav aria-label="Paginación de facturas">
+                    <ul class="pagination justify-content-center">
+                        {% if facturas.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('facturas.lista_facturas', page=facturas.prev_num, search=search) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in facturas.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num != facturas.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('facturas.lista_facturas', page=page_num, search=search) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if facturas.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('facturas.lista_facturas', page=facturas.next_num, search=search) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <!-- Estado vacío -->
+                <div class="text-center py-5">
+                    {% if search %}
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No se encontraron facturas</h5>
+                        <p class="text-muted">No hay facturas que coincidan con "<strong>{{ search }}</strong>"</p>
+                        <a href="{{ url_for('facturas.lista_facturas') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Ver todas las facturas
+                        </a>
+                    {% else %}
+                        <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No hay facturas registradas</h5>
+                        <p class="text-muted">Las facturas aparecerán aquí cuando sean generadas desde los pedidos</p>
+                        <a href="{{ url_for('pedidos.lista_pedidos') }}" class="btn btn-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Ver Pedidos
+                        </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/facturas.js') }}"></script>
+{% endblock %}

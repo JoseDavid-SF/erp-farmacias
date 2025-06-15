@@ -7,8 +7,8 @@
 @details Este módulo contiene todos los modelos de SQLAlchemy que representan 
          las entidades del sistema: clientes, productos, pedidos, facturas y albaranes.
 @author José David Sánchez Fernández
-@version 4.5
-@date 2025-06-13
+@version 4.6
+@date 2025-06-15
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -177,7 +177,7 @@ class Pedido(db.Model):
     @brief Modelo para gestionar pedidos de clientes
     @details Representa cada pedido realizado por un cliente, con su estado,
              total y relación con items individuales.
-    @version 3.4
+    @version 3.5 - CORREGIDO: Cálculo total_recargo exacto como en template
     """
     __tablename__ = 'pedidos'
     
@@ -188,7 +188,6 @@ class Pedido(db.Model):
     fecha_pedido = db.Column(db.DateTime, default=datetime.utcnow)
     estado = db.Column(db.String(20), default='pendiente')
     observaciones = db.Column(db.Text)
-    # ELIMINADO: productos_pendientes (causaba error en BD)
     
     # Relaciones
     items = db.relationship('ItemPedido', backref='pedido', lazy=True, cascade='all, delete-orphan')
@@ -208,22 +207,36 @@ class Pedido(db.Model):
     
     @property
     def total_recargo(self):
-        """Total recargo calculado dinámicamente basado en los productos"""
-        total_recargo = Decimal('0')
+        """
+        Total recargo calculado dinámicamente por tipo de IVA - CORREGIDO
+        Calcula exactamente igual que el template HTML
+        """
+        # Calcular bases por tipo de IVA
+        base_iva_4 = Decimal('0')
+        base_iva_10 = Decimal('0')
+        base_iva_21 = Decimal('0')
+        
         for item in self.items:
-            if item.producto:
-                # Usar el recargo del producto directamente
-                recargo_porcentaje = item.producto.recargo_equivalencia_calculado
-                
-                if recargo_porcentaje > 0:
-                    item_recargo = item.subtotal_sin_iva * (recargo_porcentaje / Decimal('100'))
-                    total_recargo += item_recargo
+            iva = float(item.iva_porcentaje)
+            if iva == 4.0:
+                base_iva_4 += item.subtotal_sin_iva
+            elif iva == 10.0:
+                base_iva_10 += item.subtotal_sin_iva
+            elif iva == 21.0:
+                base_iva_21 += item.subtotal_sin_iva
+        
+        # Calcular recargos por tipo de IVA (exacto como en template)
+        recargo_4 = base_iva_4 * Decimal('0.005')   # 0.50%
+        recargo_10 = base_iva_10 * Decimal('0.014') # 1.40%
+        recargo_21 = base_iva_21 * Decimal('0.052') # 5.20%
+        
+        total_recargo = recargo_4 + recargo_10 + recargo_21
         
         return total_recargo
     
     @property
     def total(self):
-        """Total calculado dinámicamente"""
+        """Total calculado dinámicamente - CORREGIDO para sumar recargo"""
         return self.subtotal + self.total_iva + self.total_recargo
     
     def calcular_totales(self):
@@ -236,6 +249,12 @@ class Pedido(db.Model):
         pass
 
     def to_dict(self):
+        """SOLO CORRECCIÓN MÍNIMA: Manejo seguro de len(self.items)"""
+        try:
+            items_count = len(self.items) if self.items else 0
+        except:
+            items_count = 0
+            
         return {
             'id': self.id,
             'numero_pedido': self.numero_pedido,
@@ -249,7 +268,7 @@ class Pedido(db.Model):
             'total': float(self.total),
             'estado': self.estado,
             'observaciones': self.observaciones,
-            'items_count': len(self.items) if self.items else 0
+            'items_count': items_count
         }
 
 class ItemPedido(db.Model):

@@ -7,13 +7,13 @@
 @details Este módulo contiene todas las rutas relacionadas con la gestión
          de pedidos: crear, listar, editar, eliminar y control de estado.
 @author José David Sánchez Fernández
-@version 1.2
-@date 2025-06-14
+@version 1.5
+@date 2025-06-15
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
-from models.models import db, Pedido, ItemPedido, Cliente, Producto
+from models.models import db, Pedido, ItemPedido, Cliente, Producto, Factura
 from datetime import datetime
 import json
 from decimal import Decimal
@@ -38,11 +38,9 @@ def lista_pedidos():
         
         # Verificar si las tablas existen
         try:
-            # Probar si podemos hacer una consulta básica
             query = Pedido.query
         except Exception as e:
             print(f"⚠️ Tabla de pedidos no existe aún: {str(e)}")
-            # Crear las tablas si no existen
             db.create_all()
             query = Pedido.query
         
@@ -51,7 +49,6 @@ def lista_pedidos():
             query = query.join(Cliente)
         except Exception as e:
             print(f"⚠️ No se puede hacer join con Cliente: {str(e)}")
-            # Continuar sin join
             pass
         
         # Aplicar filtro de búsqueda si existe
@@ -61,7 +58,6 @@ def lista_pedidos():
                 query = query.filter(
                     (Pedido.numero_pedido.ilike(search_filter))
                 )
-                # Intentar agregar filtros de cliente si la tabla existe
                 if Cliente.query.first() is not None:
                     query = query.join(Cliente).filter(
                         (Pedido.numero_pedido.ilike(search_filter)) |
@@ -97,10 +93,8 @@ def lista_pedidos():
                              
     except Exception as e:
         print(f"❌ Error al cargar pedidos: {str(e)}")
-        # En lugar de redirigir, mostrar la página con un mensaje
         flash(f'Error al cargar pedidos: {str(e)}', 'danger')
         
-        # Crear objeto pedidos vacío para evitar errores en template
         class EmptyPagination:
             def __init__(self):
                 self.items = []
@@ -153,7 +147,7 @@ def api_crear_pedido():
     @brief API para crear un nuevo pedido
     @details Procesa los datos del formulario y crea un pedido en la base de datos
     @return JSON con resultado de la operación
-    @version 1.2
+    @version 1.4
     """
     try:
         data = request.get_json()
@@ -183,7 +177,7 @@ def api_crear_pedido():
         # Generar número de pedido único
         numero_pedido = generar_numero_pedido()
         
-        # Crear nuevo pedido - SIN productos_pendientes
+        # Crear nuevo pedido
         pedido = Pedido(
             numero_pedido=numero_pedido,
             cliente_id=data['cliente_id'],
@@ -192,7 +186,7 @@ def api_crear_pedido():
         )
         
         db.session.add(pedido)
-        db.session.flush()  # Para obtener el ID del pedido
+        db.session.flush()
         
         # Procesar items del pedido
         for item_data in data['items']:
@@ -216,7 +210,6 @@ def api_crear_pedido():
                 iva_porcentaje=producto.iva_porcentaje
             )
             
-            # Calcular totales del item
             item.calcular_totales()
             
             # Actualizar stock si no es depósito
@@ -236,14 +229,33 @@ def api_crear_pedido():
         # Actualizar fecha de última visita del cliente
         cliente.fecha_ultima_visita = datetime.utcnow()
         
-        db.session.commit()
+        # Generar factura automáticamente ANTES del commit
+        factura = None
+        try:
+            factura = generar_factura_automatica(pedido)
+            if factura:
+                print(f"✅ Factura {factura.numero_factura} generada automáticamente para pedido {numero_pedido}")
+            else:
+                print(f"⚠️ No se pudo generar la factura para el pedido {numero_pedido}")
+        except Exception as e:
+            print(f"❌ Error al generar factura automática: {str(e)}")
+            # No fallar el pedido por error en factura, pero registrar el error
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'message': f'Error al generar factura: {str(e)}'
+            }), 500
         
+        # Hacer commit de todo junto
+        db.session.commit()
         print(f"✅ Pedido {numero_pedido} creado correctamente")
         
         return jsonify({
             'success': True,
-            'message': 'Pedido creado correctamente',
-            'pedido': pedido.to_dict()
+            'message': 'Pedido creado correctamente y factura generada',
+            'pedido': pedido.to_dict(),
+            'factura_generada': factura is not None,
+            'numero_factura': factura.numero_factura if factura else None
         })
         
     except Exception as e:
@@ -260,18 +272,70 @@ def api_actualizar_pedido(id):
     @brief API para actualizar un pedido existente
     @param id ID del pedido a actualizar
     @return JSON con resultado de la operación
-    @version 1.1
+    @version 1.2
     """
     try:
         pedido = Pedido.query.get_or_404(id)
         data = request.get_json()
         
-        # Solo permitir actualizar ciertos campos
+        # Verificar si tiene items para poder procesar la actualización
+        if data.get('items'):
+            # Eliminar items existentes
+            for item in pedido.items:
+                if not item.producto.es_deposito:
+                    item.producto.stock += item.cantidad
+                db.session.delete(item)
+            
+            # Procesar nuevos items
+            for item_data in data['items']:
+                if not item_data.get('producto_id') or not item_data.get('cantidad'):
+                    continue
+                    
+                producto = Producto.query.get(item_data['producto_id'])
+                if not producto:
+                    continue
+                    
+                cantidad = int(item_data['cantidad'])
+                if cantidad <= 0:
+                    continue
+                
+                # Crear nuevo item
+                item = ItemPedido(
+                    pedido_id=pedido.id,
+                    producto_id=producto.id,
+                    cantidad=cantidad,
+                    precio_unitario_sin_iva=producto.pvf_sin_iva,
+                    iva_porcentaje=producto.iva_porcentaje
+                )
+                
+                item.calcular_totales()
+                
+                # Actualizar stock si no es depósito
+                if not producto.es_deposito:
+                    if producto.stock < cantidad:
+                        return jsonify({
+                            'success': False,
+                            'message': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}'
+                        }), 400
+                    producto.stock -= cantidad
+                
+                db.session.add(item)
+        
+        # Actualizar campos del pedido
         pedido.estado = data.get('estado', pedido.estado)
         pedido.observaciones = data.get('observaciones', pedido.observaciones)
         
         # Recalcular totales
         pedido.calcular_totales()
+        
+        # Actualizar factura automáticamente si existe
+        try:
+            factura_actual = obtener_factura_pedido(pedido)
+            if factura_actual:
+                actualizar_factura_automatica(pedido)
+                print(f"✅ Factura {factura_actual.numero_factura} actualizada automáticamente")
+        except Exception as e:
+            print(f"⚠️ Error al actualizar factura automática: {str(e)}")
         
         db.session.commit()
         
@@ -311,6 +375,11 @@ def api_eliminar_pedido(id):
             if not item.producto.es_deposito:
                 item.producto.stock += item.cantidad
         
+        # Eliminar factura asociada si existe
+        factura_actual = obtener_factura_pedido(pedido)
+        if factura_actual:
+            db.session.delete(factura_actual)
+        
         # Eliminar pedido (los items se eliminan automáticamente por cascade)
         db.session.delete(pedido)
         db.session.commit()
@@ -333,14 +402,48 @@ def api_detalle_pedido(id):
     @brief API para obtener detalles completos de un pedido
     @param id ID del pedido
     @return JSON con datos completos del pedido incluyendo items
-    @version 1.0
+    @version 1.3 - CORRECCIÓN DEL ERROR DE FACTURA
     """
     try:
         pedido = Pedido.query.get_or_404(id)
         
         # Convertir pedido a diccionario con items
         pedido_data = pedido.to_dict()
-        pedido_data['items'] = [item.to_dict() for item in pedido.items]
+        
+        # Manejo seguro de items
+        try:
+            if pedido.items:
+                pedido_data['items'] = []
+                for item in pedido.items:
+                    try:
+                        pedido_data['items'].append(item.to_dict())
+                    except Exception as item_error:
+                        print(f"⚠️ Error al serializar item {getattr(item, 'id', 'unknown')}: {str(item_error)}")
+                        continue
+            else:
+                pedido_data['items'] = []
+        except Exception as items_error:
+            print(f"⚠️ Error al acceder a items del pedido {id}: {str(items_error)}")
+            pedido_data['items'] = []
+        
+        # CORRECCIÓN: Manejo seguro de factura con función auxiliar
+        try:
+            factura_actual = obtener_factura_pedido(pedido)
+            if factura_actual:
+                pedido_data['factura'] = {
+                    'id': factura_actual.id,
+                    'numero_factura': factura_actual.numero_factura,
+                    'fecha_factura': factura_actual.fecha_factura.isoformat(),
+                    'total': float(factura_actual.total),
+                    'enviada_por_email': factura_actual.enviada_por_email
+                }
+                print(f"✅ Factura {factura_actual.numero_factura} encontrada para pedido {id}")
+            else:
+                pedido_data['factura'] = None
+                print(f"ℹ️ No se encontró factura para el pedido {id}")
+        except Exception as factura_error:
+            print(f"⚠️ Error al acceder a factura del pedido {id}: {str(factura_error)}")
+            pedido_data['factura'] = None
         
         return jsonify({
             'success': True,
@@ -348,6 +451,7 @@ def api_detalle_pedido(id):
         })
         
     except Exception as e:
+        print(f"❌ Error general en api_detalle_pedido: {str(e)}")
         return jsonify({
             'success': False,
             'error': f'Error al obtener pedido: {str(e)}'
@@ -406,7 +510,6 @@ def api_buscar_productos():
             (Producto.codigo.ilike(search_filter))
         ).limit(limite).all()
         
-        # Convertir productos a diccionario para JSON
         productos_data = []
         for producto in productos:
             producto_dict = producto.to_dict()
@@ -508,6 +611,44 @@ def api_estadisticas_pedidos():
             'error': f'Error al obtener estadísticas: {str(e)}'
         }), 500
 
+def obtener_factura_pedido(pedido):
+    """
+    @brief Obtiene la factura asociada a un pedido de forma segura
+    @param pedido Objeto Pedido
+    @return Factura o None
+    @version 1.0 - NUEVA FUNCIÓN PARA MANEJAR RELACIÓN FACTURA
+    """
+    try:
+        # Método 1: Usar la relación backref si está definida correctamente
+        if hasattr(pedido, 'factura'):
+            factura_obj = getattr(pedido, 'factura')
+            
+            # Si es una lista (InstrumentedList), tomar el primer elemento
+            if hasattr(factura_obj, '__iter__') and not isinstance(factura_obj, str):
+                try:
+                    # Es una lista, tomar el primer elemento
+                    if len(factura_obj) > 0:
+                        return factura_obj[0]
+                    else:
+                        return None
+                except:
+                    return None
+            else:
+                # Es un objeto individual
+                return factura_obj
+        
+        # Método 2: Consulta directa como backup
+        factura = Factura.query.filter_by(pedido_id=pedido.id).first()
+        return factura
+        
+    except Exception as e:
+        print(f"⚠️ Error en obtener_factura_pedido: {str(e)}")
+        # Método 3: Consulta directa como último recurso
+        try:
+            return Factura.query.filter_by(pedido_id=pedido.id).first()
+        except:
+            return None
+
 def generar_numero_pedido():
     """
     @brief Genera un número único para el pedido
@@ -526,7 +667,6 @@ def generar_numero_pedido():
     ).order_by(Pedido.numero_pedido.desc()).first()
     
     if ultimo_pedido:
-        # Extraer el número secuencial del último pedido
         try:
             ultimo_numero = int(ultimo_pedido.numero_pedido.split('-')[-1])
             nuevo_numero = ultimo_numero + 1
@@ -536,3 +676,91 @@ def generar_numero_pedido():
         nuevo_numero = 1
     
     return f"{prefijo}-{nuevo_numero:03d}"
+
+def generar_factura_automatica(pedido):
+    """
+    @brief Genera automáticamente una factura para un pedido
+    @param pedido Objeto Pedido para el cual generar la factura
+    @return Factura Objeto factura generado
+    @version 1.2 - CORREGIDO PARA USAR FUNCIÓN AUXILIAR
+    """
+    try:
+        # Verificar si ya tiene factura usando la función auxiliar
+        factura_existente = obtener_factura_pedido(pedido)
+        if factura_existente:
+            print(f"⚠️ El pedido {pedido.numero_pedido} ya tiene una factura: {factura_existente.numero_factura}")
+            return factura_existente
+        
+        numero_factura = generar_numero_factura()
+        print(f"🧾 Generando factura {numero_factura} para pedido {pedido.numero_pedido}")
+        
+        factura = Factura(
+            numero_factura=numero_factura,
+            pedido_id=pedido.id,
+            fecha_factura=datetime.utcnow(),
+            total=pedido.total,
+            enviada_por_email=False
+        )
+        
+        db.session.add(factura)
+        # No hacer flush aquí, se hará commit en la función principal
+        
+        print(f"✅ Factura {numero_factura} creada en sesión para pedido {pedido.numero_pedido}")
+        return factura
+        
+    except Exception as e:
+        print(f"❌ Error en generar_factura_automatica: {str(e)}")
+        raise e
+
+def actualizar_factura_automatica(pedido):
+    """
+    @brief Actualiza automáticamente la factura cuando se modifica un pedido
+    @param pedido Objeto Pedido modificado
+    @return Factura Objeto factura actualizado
+    @version 1.1 - CORREGIDO PARA USAR FUNCIÓN AUXILIAR
+    """
+    factura_actual = obtener_factura_pedido(pedido)
+    if not factura_actual:
+        return generar_factura_automatica(pedido)
+    
+    factura_actual.total = pedido.total
+    return factura_actual
+
+def generar_numero_factura():
+    """
+    @brief Genera un número de factura único siguiendo el formato VF/XXX/YY
+    @details Utiliza el formato: VF/[número secuencial]/[año de 2 dígitos]
+    @return String con el número de factura generado
+    @version 1.0
+    """
+    try:
+        anio_actual = datetime.utcnow().strftime('%y')
+        patron_anio = f'%/{anio_actual}'
+        ultima_factura = Factura.query.filter(
+            Factura.numero_factura.like(patron_anio)
+        ).order_by(Factura.numero_factura.desc()).first()
+        
+        if ultima_factura:
+            partes = ultima_factura.numero_factura.split('/')
+            if len(partes) == 3:
+                try:
+                    ultimo_numero = int(partes[1])
+                    siguiente_numero = ultimo_numero + 1
+                except ValueError:
+                    siguiente_numero = 1
+            else:
+                siguiente_numero = 1
+        else:
+            siguiente_numero = 1
+        
+        numero_factura = f"VF/{siguiente_numero:03d}/{anio_actual}"
+        
+        while Factura.query.filter_by(numero_factura=numero_factura).first():
+            siguiente_numero += 1
+            numero_factura = f"VF/{siguiente_numero:03d}/{anio_actual}"
+        
+        return numero_factura
+        
+    except Exception as e:
+        timestamp = datetime.utcnow().strftime('%y%m%d%H%M')
+        return f"VF/{timestamp}/ER"

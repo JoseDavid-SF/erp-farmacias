@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}{{ factura.numero_factura }}{% endblock %}
+
+{% block breadcrumb %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header no-print">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="text-primary mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Factura {{ factura.numero_factura }}
+                    </h6>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-success" onclick="window.print()">
+                            <i class="fas fa-print me-1"></i>Imprimir
+                        </button>
+                        <a href="{{ url_for('facturas.lista_facturas') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Cabecera de la factura -->
+                <div class="factura-header">
+                    <div class="row">
+                        <!-- Datos de la empresa -->
+                        <div class="col-md-6">
+                            <div class="empresa-info">
+                                <h5 class="text-primary mb-2">
+                                    MEGA NEVADA, S.L.
+                                </h5>
+                                <div class="small">
+                                    C/ CUESTA BLANQUILLA, Nº 21/BLOQ. 3/PTAL. 2/1º E<br>
+                                    18110 / LAS GABIAS / GRANADA<br>
+                                    TEL. 601610843 / EMAIL. fernando_enriquez65@outlook.com<br>
+                                    N.I.F. B-06.956.007
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Datos del cliente -->
+                        <div class="col-md-6">
+                            <div class="cliente-info">
+                                <h6 class="text-dark mb-2">
+                                    {{ factura.pedido.cliente.nombre_fiscal or factura.pedido.cliente.nombre }}
+                                </h6>
+                                <div class="small">
+                                    {% if factura.pedido.cliente.direccion %}
+                                        {{ factura.pedido.cliente.direccion }}<br>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datos de la factura -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="factura-datos">
+                            <table class="factura-datos-table">
+                                <tr>
+                                    <td class="label">FECHA</td>
+                                    <td>{{ factura.fecha_factura.strftime('%d/%m/%y') }}</td>
+                                    <td class="label">Nº FACTURA</td>
+                                    <td>{{ factura.numero_factura }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">CLIENTE</td>
+                                    <td>{{ factura.pedido.cliente.codigo }}</td>
+                                    <td class="label">N.I.F.</td>
+                                    <td>{{ factura.pedido.cliente.cif or '' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">FORMA DE PAGO</td>
+                                    <td>30 DÍAS</td>
+                                    <td class="label">VENCIMIENTO</td>
+                                    <td>
+                                        {% set vencimiento = factura.fecha_factura + factura.fecha_factura.__class__.resolution * 30 * 24 * 60 * 60 * 1000000 %}
+                                        {{ vencimiento.strftime('%d/%m/%y') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="text-center" style="font-weight: bold; padding-top: 0.5rem;">
+                                        Nº HOJA: 1
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end no-print">
+                        {% if factura.enviada_por_email %}
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check me-1"></i>ENVIADA POR EMAIL
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning fs-6">
+                                <i class="fas fa-clock me-1"></i>PENDIENTE DE ENVÍO
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Línea separadora -->
+                <hr style="border-top: 2px solid #000; margin: 20px 0;">
+
+                <!-- Tabla de productos -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered tabla-productos">
+                        <thead>
+                            <tr>
+                                <th style="width: 12%">CODIGO</th>
+                                <th style="width: 50%">ARTICULO</th>
+                                <th style="width: 10%">UNID</th>
+                                <th style="width: 14%">PVL/PVF</th>
+                                <th style="width: 14%">IMPORTE</th>
+                                <th style="width: 10%">IVA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in factura.pedido.items %}
+                            <tr>
+                                <td class="small" style="vertical-align: top;">
+                                    <strong>{{ item.producto.codigo }}</strong>
+                                </td>
+                                <td class="small" style="vertical-align: top;">
+                                    <strong>{{ item.producto.marca or 'PRODUCTO' }}</strong><br>
+                                    {{ item.producto.nombre }}<br>
+                                    {% if item.producto.lote %}
+                                        LOTE: {{ item.producto.lote }}<br>
+                                    {% endif %}
+                                    {% if item.producto.fecha_caducidad %}
+                                        CAD: {{ item.producto.fecha_caducidad.strftime('%Y/%m/%d') }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ item.cantidad }}</td>
+                                <td class="text-end">{{ "%.2f"|format(item.precio_unitario_sin_iva) }}</td>
+                                <td class="text-end">{{ "%.2f"|format(item.subtotal_sin_iva) }}</td>
+                                <td class="text-center">{{ "%.0f"|format(item.iva_porcentaje) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Línea separadora antes de totales -->
+                <hr style="border-top: 1px solid #000; margin: 10px 0;">
+
+                <!-- Totales CORREGIDOS - SIN COLUMNA IMPORTE NETO -->
+                <div class="row">
+                    <div class="col-md-8"></div>
+                    <div class="col-md-4">
+                        <div class="totales-factura">
+                            {% set base_iva_4 = factura.pedido.items|selectattr('iva_porcentaje', 'equalto', 4)|map(attribute='subtotal_sin_iva')|sum|float %}
+                            {% set base_iva_10 = factura.pedido.items|selectattr('iva_porcentaje', 'equalto', 10)|map(attribute='subtotal_sin_iva')|sum|float %}
+                            {% set base_iva_21 = factura.pedido.items|selectattr('iva_porcentaje', 'equalto', 21)|map(attribute='subtotal_sin_iva')|sum|float %}
+                            {% set iva_4 = factura.pedido.items|selectattr('iva_porcentaje', 'equalto', 4)|map(attribute='total_iva')|sum|float %}
+                            {% set iva_10 = factura.pedido.items|selectattr('iva_porcentaje', 'equalto', 10)|map(attribute='total_iva')|sum|float %}
+                            {% set iva_21 = factura.pedido.items|selectattr('iva_porcentaje', 'equalto', 21)|map(attribute='total_iva')|sum|float %}
+                            {% set recargo_4 = base_iva_4 * 0.005 %}
+                            {% set recargo_10 = base_iva_10 * 0.014 %}
+                            {% set recargo_21 = base_iva_21 * 0.052 %}
+                            {% set total_recargo = recargo_4 + recargo_10 + recargo_21 %}
+                            {% set total_factura = base_iva_4 + base_iva_10 + base_iva_21 + iva_4 + iva_10 + iva_21 + total_recargo %}
+                            
+                            <table class="table table-sm mb-0" style="font-size: 0.8rem;">
+                                <thead>
+                                    <tr>
+                                        <th>BASE I.V.A</th>
+                                        <th>% I.V.A</th>
+                                        <th>% REC</th>
+                                        <th>IVA</th>
+                                        <th>REC</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if base_iva_4 > 0 %}
+                                    <tr>
+                                        <td>{{ "%.2f"|format(base_iva_4) }}</td>
+                                        <td>4%</td>
+                                        <td>0.50%</td>
+                                        <td>{{ "%.2f"|format(iva_4) }}</td>
+                                        <td>{{ "%.2f"|format(recargo_4) }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if base_iva_10 > 0 %}
+                                    <tr>
+                                        <td>{{ "%.2f"|format(base_iva_10) }}</td>
+                                        <td>10%</td>
+                                        <td>1.40%</td>
+                                        <td>{{ "%.2f"|format(iva_10) }}</td>
+                                        <td>{{ "%.2f"|format(recargo_10) }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if base_iva_21 > 0 %}
+                                    <tr>
+                                        <td>{{ "%.2f"|format(base_iva_21) }}</td>
+                                        <td>21%</td>
+                                        <td>5.20%</td>
+                                        <td>{{ "%.2f"|format(iva_21) }}</td>
+                                        <td>{{ "%.2f"|format(recargo_21) }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                            
+                            <div class="total-final text-center mt-3">
+                                IMPORTE TOTAL<br>
+                                {{ "%.2f"|format(total_factura) }} €
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/facturas.js') }}"></script>
+{% endblock %}

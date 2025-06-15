@@ -7,8 +7,8 @@
 @details Archivo principal que inicializa Flask, configura la base de datos
          y define las rutas principales del sistema.
 @author José David Sánchez Fernández
-@version 6.2
-@date 2025-06-10
+@version 6.3
+@date 2025-06-15
 @copyright Copyright (c) 2025 Mega Nevada S.L. Todos los derechos reservados.
 """
 
@@ -25,7 +25,7 @@ def create_app(config_name=None):
              con todas las extensiones y configuraciones necesarias.
     @param config_name Nombre del entorno de configuración a usar
     @return Flask Instancia configurada de la aplicación
-    @version 6.1
+    @version 6.2
     """
     
     # Crear instancia de Flask
@@ -44,6 +44,7 @@ def create_app(config_name=None):
     # Registrar blueprints
     from routes.clientes import clientes_bp
     from routes.pedidos import pedidos_bp
+    from routes.facturas import facturas_bp
     
     try:
         from routes.productos import productos_bp
@@ -54,7 +55,8 @@ def create_app(config_name=None):
     
     app.register_blueprint(clientes_bp)
     app.register_blueprint(pedidos_bp)
-    print("✅ Blueprints de clientes y pedidos registrados")
+    app.register_blueprint(facturas_bp)
+    print("✅ Blueprints de clientes, pedidos y facturas registrados")
     
     # Crear las tablas de la base de datos
     with app.app_context():
@@ -92,7 +94,7 @@ def create_app(config_name=None):
             return jsonify({
                 "status": "success",
                 "message": "API y base de datos PostgreSQL funcionando correctamente",
-                "version": "6.2",
+                "version": "6.3",
                 "database": "PostgreSQL conectado"
             })
         except Exception as e:
@@ -413,7 +415,7 @@ if __name__ == '__main__':
     """
     @brief Punto de entrada principal de la aplicación
     @details Crea y ejecuta la aplicación Flask en modo desarrollo
-    @version 6.1
+    @version 6.2
     """
     # Crear y ejecutar la aplicación
     app = create_app()
@@ -423,6 +425,7 @@ if __name__ == '__main__':
     print("👥 Clientes disponible en: http://localhost:5000/clientes")
     print("📦 Productos disponible en: http://localhost:5000/productos")
     print("🛒 Pedidos disponible en: http://localhost:5000/pedidos")
+    print("🧾 Facturas disponible en: http://localhost:5000/facturas")
     print("🔧 API disponible en: http://localhost:5000/api/test")
     print("📋 Estado del sistema: http://localhost:5000/api/status")
     
