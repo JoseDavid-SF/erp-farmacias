@@ -571,14 +571,15 @@ async function eliminarProducto(productoId, nombreProducto) {
 }
 
 /**
- * @brief Agrega un producto a un pedido (funcionalidad futura)
+ * @brief Agrega un producto a un pedido
  * @param productoId ID del producto
  * @version 1.0
  */
 function agregarAPedido(productoId) {
-    showNotification('Funcionalidad de pedidos en desarrollo', 'info');
     const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalleProducto'));
     if (modal) modal.hide();
+    
+    window.location.href = `/pedidos/nuevo?producto=${productoId}`;
 }
 
 /**
